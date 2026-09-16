@@ -28,9 +28,8 @@ router = APIRouter(
 # REGISTER
 # =========================================================
 
-@router.post(
-    "/register",
-    response_model=UserResponse,
+@router.post("/register",
+    response_model=UserResponse, #response_model use pannrathu API response format-ai control panna. Sensitive fields like password response-la varaama prevent panna use pannrom.
     status_code=status.HTTP_201_CREATED
 )
 def register(
@@ -129,3 +128,4 @@ def login(
         "access_token": access_token,
         "token_type": "bearer"
     }
+#“This auth.py router handles user registration and login. During registration, it validates the input through Pydantic, checks whether the username and email already exist, hashes the password, and stores the user in the database. During login, it retrieves the user using the email, verifies the password against the stored hash, creates a JWT access token, and returns it to the clien

@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 class UserRegister(BaseModel):
     username: str = Field(
-        ...,
+        ...,#-->REQUIRED FIELD
         min_length=3,
         max_length=50
     )
@@ -38,7 +38,6 @@ class UserResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     email: EmailStr
-
     password: str
 
 
@@ -62,7 +61,7 @@ class PostCreate(BaseModel):
         ...,
         min_length=10
     )
-
+    image: str | None = None
 
 class PostUpdate(BaseModel):
     title: str | None = Field(
@@ -75,6 +74,7 @@ class PostUpdate(BaseModel):
         default=None,
         min_length=10
     )
+    image: str | None = None
 
 
 class PostResponse(BaseModel):
@@ -83,6 +83,7 @@ class PostResponse(BaseModel):
     content: str
     author_id: int
     created_at: datetime
+    image: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True

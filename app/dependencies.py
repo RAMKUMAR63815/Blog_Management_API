@@ -1,6 +1,6 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status #-->Multiple API endpoints-ku common-ah thevai padra logic-a oru place-la store panra file.
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session #-->Python application-um database-um interact panna use panra working connection/session object for CRUD operation.
 
 from .database import get_db
 from .models import User
@@ -11,7 +11,7 @@ from .auth import decode_access_token
 # BEARER AUTHENTICATION
 # =========================================================
 
-security = HTTPBearer()
+security = HTTPBearer()#-->HTTPBearer() reads the Bearer token
 
 
 # =========================================================
@@ -20,12 +20,12 @@ security = HTTPBearer()
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db) #--> indha function-ku thevaiyana value-a nee automatically provide pannu
 ):
 
     token = credentials.credentials
 
-    payload = decode_access_token(token)
+    payload = decode_access_token(token)#>verify signature and expiry
 
     if payload is None:
 

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .database import Base, engine
 
@@ -17,7 +18,7 @@ from .routers import like
 # CREATE DATABASE TABLES
 # =========================================================
 
-Base.metadata.create_all(
+Base.metadata.create_all( #SQLAlchemy-kku "enna enna tables irukku, avanga columns enna" nu therinja information.Metadata-la irukkura tables database-la create pannunga.
     bind=engine
 )
 
@@ -40,14 +41,20 @@ app = FastAPI(
 # CORS
 # =========================================================
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
+app.add_middleware( #Frontend and backend different origins-la run aagumbodhu browser communication allow panna.
+    CORSMiddleware,#Add this extra request/response processing
+    allow_origins=["*"],#any orgin are allowed 
+    allow_credentials=True,#Frontend-la irukkura login cookie/credentials-ai backend-ku send panna allow pannum.
+    allow_methods=["*"],#all HTTP methods(GET,POST,PUT,DELETE)
+    allow_headers=["*"] #HTTP request headers(Authorization: Bearer)
 )
+#mount - make this folder accessible/connect/attach through this URL path.
 
+app.mount(
+    "/media", #When a browser requests something starting with /media, use the media folder why its use means it not automattically allowed to access insode the file under media.
+    StaticFiles(directory="media"),#StaticFiles does not upload the image.It only says: If a file already exists inside media, allow the browser/client to access it.”
+    name="media" #internal name for this mounted route
+)
 
 # =========================================================
 # ROOT

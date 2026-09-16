@@ -1,9 +1,9 @@
 import os
-import smtplib
+import smtplib #Python's built-in library for communicating with an SMTP mail server
 
 from dotenv import load_dotenv
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText #The actual email body is plain text
+from email.mime.multipart import MIMEMultipart #Create an empty email envelope from,to,subject
 
 
 # =========================================================
@@ -19,7 +19,7 @@ load_dotenv()
 
 SMTP_SERVER = os.getenv(
     "SMTP_SERVER",
-    "smtp.gmail.com"
+    "smtp.gmail.com" #none means use default
 )
 
 SMTP_PORT = int(
@@ -35,7 +35,7 @@ EMAIL_USERNAME = os.getenv(
 )
 
 EMAIL_PASSWORD = os.getenv(
-    "EMAIL_PASSWORD",
+    "EMAIL_PASSWORD",#Gmail App Password
     ""
 )
 
@@ -70,7 +70,7 @@ def send_email(
     # Create email
     # -----------------------------------------------------
 
-    email = MIMEMultipart()
+    email = MIMEMultipart() #Create email
 
     email["From"] = EMAIL_USERNAME
     email["To"] = to_email
@@ -98,19 +98,19 @@ def send_email(
         print(f"Subject : {subject}")
         print("========================================")
 
-
-        with smtplib.SMTP(
+        #Python's built-in library for sending email using SMTP -is class inside smtplib use to communicate with a mail server
+        with smtplib.SMTP( #This connects my Python application to the SMTP server. with --->After sending the email, the SMTP connection is properly closed
             SMTP_SERVER,
             SMTP_PORT
         ) as server:
 
-            server.ehlo()
+            server.ehlo() #This is an SMTP communication command (Hello, this client is connecting and these are the capabilities it supports)
 
-            server.starttls()
+            server.starttls() #upgrades this SMTP connection to a secure encrypted connection using TLS
 
-            server.ehlo()
+            server.ehlo() #capabilities for the secured connection.Now that we're communicating securely, let's identify ourselves again and establish the SMTP capabilities for the secure session
 
-            server.login(
+            server.login( #This authenticates our application with Gmail.
                 EMAIL_USERNAME,
                 EMAIL_PASSWORD
             )

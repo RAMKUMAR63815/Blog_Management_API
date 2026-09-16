@@ -87,6 +87,8 @@ class Post(Base):
         nullable=False
     )
 
+    image = Column (String(255), nullable=True)
+
     author_id = Column(
         Integer,
         ForeignKey("users.id"),

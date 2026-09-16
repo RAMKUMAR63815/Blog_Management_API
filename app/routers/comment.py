@@ -23,11 +23,11 @@ router = APIRouter(
     response_model=CommentResponse,
     status_code=status.HTTP_201_CREATED
 )
-def add_comment(
+def add_comment(#add_comment() function user /posts/{post_id}/comments API call pannumbodhu execute aagum. Function bracket-kulla irukkuradhu parameters. post_id URL-la irundhu varum, comment_data request body-la irundhu varum, db database session-a Depends(get_db) kudukkum, current_user JWT token decode pannitu login user information-a Depends(get_current_user) kudukkum. This is called Dependency Injection in FastAPI.
     post_id: int,
     comment_data: CommentCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user) #Reads JWT token Decodes token Finds user in DB Returns User object
 ):
     post = db.query(Post).filter(
         Post.id == post_id
@@ -50,7 +50,9 @@ def add_comment(
     db.refresh(new_comment)
 
     # Send email to post owner
-    if post.author_id != current_user.id:
+    if post.author_id != current_user.id:   # "Comment podra user-um Post owner-um same person-a If different user menas send notification
+
+
         send_comment_notification(
             post_author_email=post.author.email,
             commenter_username=current_user.username,
