@@ -5,7 +5,8 @@ from sqlalchemy import (
     Text,
     DateTime,
     ForeignKey,
-    UniqueConstraint
+    UniqueConstraint,
+    Boolean
 )
 
 from sqlalchemy.orm import relationship
@@ -62,7 +63,153 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+        # User -> Subscription Plan
+    subscription_plan_id = Column(
+        Integer,
+        ForeignKey("subscription_plans.id"), #This is a many-users-to-one-plan relationship.
+        nullable=True
+    )
 
+    subscription_plan = relationship(
+        "SubscriptionPlan",
+        back_populates="users"
+    )
+        # User -> Billing History
+    billing_history = relationship(
+        "BillingHistory",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+# =========================================================
+# SUBSCRIPTION PLAN MODEL
+# =========================================================
+
+class SubscriptionPlan(Base):
+    __tablename__ = "subscription_plans"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    name = Column(
+        String(50),
+        unique=True,
+        nullable=False
+    )
+
+    price = Column(
+        Integer,
+        nullable=False,
+        default=0
+    )
+
+    max_posts = Column(
+        Integer,
+        nullable=True
+    )
+
+    max_images = Column(
+        Integer,
+        nullable=True
+    )
+
+    max_comments = Column(
+        Integer,
+        nullable=True
+    )
+
+    max_likes = Column(
+        Integer,
+        nullable=True
+    )
+
+    is_active = Column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+
+    # SubscriptionPlan -> Users
+    users = relationship(
+        "User",
+        back_populates="subscription_plan"
+    )
+
+    # SubscriptionPlan -> Billing History
+    billing_history = relationship(
+        "BillingHistory",
+        back_populates="plan"
+    )
+# =========================================================
+# BILLING HISTORY MODEL    But after one month, you upgrade to Pro.If we only store the current plan, we lose the previous information.llingHistory lets us keep:
+# =========================================================
+
+class BillingHistory(Base):
+    __tablename__ = "billing_history"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    plan_id = Column(
+        Integer,
+        ForeignKey("subscription_plans.id"),
+        nullable=False
+    )
+
+    amount = Column(
+        Integer,
+        nullable=False
+    )
+
+    transaction_id = Column(
+        String(100),
+        unique=True,
+        nullable=False
+    )
+
+    invoice_path = Column(
+        String(255),
+        nullable=True
+    )
+
+    start_date = Column(
+        DateTime,
+        nullable=False
+    )
+
+    end_date = Column(
+        DateTime,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    # BillingHistory -> User
+    user = relationship(
+        "User",
+        back_populates="billing_history"
+    )
+
+    # BillingHistory -> SubscriptionPlan
+    plan = relationship(
+        "SubscriptionPlan",
+        back_populates="billing_history"
+    )
 
 # =========================================================
 # POST MODEL
@@ -120,6 +267,7 @@ class Post(Base):
         back_populates="post",
         cascade="all, delete-orphan"
     )
+
 
 
 # =========================================================

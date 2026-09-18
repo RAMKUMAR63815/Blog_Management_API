@@ -12,7 +12,7 @@ from .routers import auth
 from .routers import post
 from .routers import comment
 from .routers import like
-
+from .routers.subscription import router as subscription_router
 
 # =========================================================
 # CREATE DATABASE TABLES
@@ -88,3 +88,4 @@ app.include_router(
 app.include_router(
     like.router
 )
+app.include_router(subscription_router)

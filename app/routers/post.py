@@ -3,7 +3,8 @@ import os
 import shutil #helps us copy/move the uploaded file to our storage folder
 from uuid import uuid4  # gives each uploaded image a unique filename and prevents overwritingfrom sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Post
+from ..models import Post , User
+from ..utils.subscription import check_post_limit
 from ..schemas import (  PostResponse)
 from ..dependencies import get_current_user
 from sqlalchemy import or_ #Search the keyword in title OR content.
@@ -37,6 +38,12 @@ def create_post(
     current_user=Depends(get_current_user)
 
 ):
+    # ===================================================== #
+    #  SUBSCRIPTION PLAN LIMIT CHECK #
+    #  =====================================================
+    current_post_count = db.query(Post).filter( Post.author_id == current_user.id ).count() 
+    check_post_limit( db=db, user=current_user, current_post_count=current_post_count )
+
     image_path = None
 
     if image:

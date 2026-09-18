@@ -1,10 +1,10 @@
 # Blog Management API
 
-A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, and Email Notifications**.
+A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Subscription-Based Access Control, Billing, and Invoice Generation**.
 
 ---
 
-## 🚀 Project Overview
+# 🚀 Project Overview
 
 This project is a mini blogging system where authenticated users can:
 
@@ -21,16 +21,19 @@ This project is a mini blogging system where authenticated users can:
 * View comments
 * Like and unlike posts
 * Receive email notifications for new comments and likes
+* Subscribe to Basic, Premium, or Pro plans
+* Access features according to their subscription limits
+* Upgrade their subscription
+* Generate subscription invoices
+* View billing history
 
 The API also provides **Swagger documentation** for easy API testing.
 
 ---
 
-## 🆕 Latest Features Added
+# 🆕 Latest Features Added
 
-The following features were added as part of the latest enhancement:
-
-### 1. Image Upload
+## 1. Image Upload
 
 Users can upload an image while creating or updating a post.
 
@@ -54,7 +57,9 @@ The image can be accessed through:
 http://127.0.0.1:8000/media/posts/6d33702627e6455aabb19bfffe5731df_images.jpg
 ```
 
-### 2. Pagination
+---
+
+## 2. Pagination
 
 The posts API supports pagination using:
 
@@ -77,7 +82,9 @@ Response includes:
 * Total number of pages
 * Posts for the current page
 
-### 3. Search
+---
+
+## 3. Search
 
 Posts can be searched using a keyword.
 
@@ -92,7 +99,11 @@ Example:
 GET /posts/?search=fastapi
 ```
 
-### 4. Search + Pagination
+The search is case-insensitive.
+
+---
+
+## 4. Search + Pagination
 
 Search and pagination can be used together.
 
@@ -104,63 +115,338 @@ GET /posts/?page=1&limit=10&search=fastapi
 
 ---
 
-## 🛠️ Technologies Used
+# 💳 5. Subscription-Based Access Control
 
-* Python
-* FastAPI
-* SQLAlchemy
-* SQLite
-* Pydantic
-* JWT Authentication
-* Passlib
-* Bcrypt
-* SMTP / Gmail
-* Uvicorn
-* Swagger UI
-* UploadFile
-* StaticFiles
+The API provides three subscription plans:
+
+* Basic
+* Premium
+* Pro
+
+Each subscription plan has different limits for posts, comments, and likes.
+
+## Subscription Plans
+
+| Feature  | Basic | Premium |       Pro |
+| -------- | ----: | ------: | --------: |
+| Price    |    ₹0 |    ₹499 |      ₹999 |
+| Posts    |     1 |       2 | Unlimited |
+| Images   |     1 |       2 | Unlimited |
+| Comments |    10 |      50 | Unlimited |
+| Likes    |    10 |      50 | Unlimited |
+
+`NULL` limits are used for the Pro plan to represent unlimited access.
 
 ---
 
-# 📁 Project Structure
+## Subscription Flow
 
 ```text
-Blog_Management_API/
-
-│
-├── .env
-├── .gitignore
-├── blog.db
-├── requirements.txt
-├── README.md
-│
-├── media/
-│   └── posts/
-│       └── uploaded images
-│
-├── Screenshots/
-│
-└── app/
-    │
-    ├── __init__.py
-    ├── main.py
-    ├── database.py
-    ├── models.py
-    ├── schemas.py
-    ├── auth.py
-    ├── dependencies.py
-    │
-    ├── utils/
-    │   ├── __init__.py
-    │   └── email.py
-    │
-    └── routers/
-        ├── __init__.py
-        ├── auth.py
-        ├── post.py
-        ├── comment.py
-        └── like.py
+User
+  ↓
+Select Subscription Plan
+  ↓
+Upgrade API
+  ↓
+Check selected plan
+  ↓
+Create transaction ID
+  ↓
+Generate invoice PDF
+  ↓
+Create billing history
+  ↓
+Update user's subscription plan
+  ↓
+Return subscription details
 ```
+
+---
+
+# 🔐 Subscription Access Control
+
+The user's subscription plan controls access to certain actions.
+
+## Post Limit
+
+Before creating a post, the API checks the number of posts already created by the user.
+
+Example:
+
+```text
+Basic Plan
+Maximum posts = 1
+
+Existing posts = 1
+        ↓
+Limit reached
+        ↓
+New post rejected
+```
+
+The API returns:
+
+```text
+403 Forbidden
+```
+
+with:
+
+```text
+You've reached your plan limit. Kindly upgrade your plan to continue.
+```
+
+---
+
+## Comment Limit
+
+Before creating a comment, the API counts the comments created by the current user.
+
+Example:
+
+```text
+Basic Plan
+Maximum comments = 10
+
+Existing comments = 10
+        ↓
+Limit reached
+        ↓
+New comment rejected
+```
+
+Premium users can create up to 50 comments.
+
+Pro users have unlimited comments.
+
+---
+
+## Like Limit
+
+Before creating a new like, the API counts the likes created by the current user.
+
+Example:
+
+```text
+Basic Plan
+Maximum likes = 10
+
+Existing likes = 10
+        ↓
+Limit reached
+        ↓
+New like rejected
+```
+
+Premium users can create up to 50 likes.
+
+Pro users have unlimited likes.
+
+---
+
+## Duplicate Like Validation
+
+The subscription limit and duplicate-like validation are separate checks.
+
+A user cannot like the same post twice.
+
+Example:
+
+```text
+User 1
+   ↓
+Likes Post 1
+   ↓
+Like created
+
+User 1
+   ↓
+Likes Post 1 again
+   ↓
+Rejected
+```
+
+Response:
+
+```text
+You already liked this post
+```
+
+---
+
+# 📋 Subscription APIs
+
+## Get Subscription Plans
+
+```http
+GET /subscriptions/plans
+```
+
+Returns all active subscription plans.
+
+Example:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Basic",
+    "price": 0,
+    "max_posts": 1,
+    "max_images": 1,
+    "max_comments": 10,
+    "max_likes": 10,
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "name": "Premium",
+    "price": 499,
+    "max_posts": 2,
+    "max_images": 2,
+    "max_comments": 50,
+    "max_likes": 50,
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "name": "Pro",
+    "price": 999,
+    "max_posts": null,
+    "max_images": null,
+    "max_comments": null,
+    "max_likes": null,
+    "is_active": true
+  }
+]
+```
+
+---
+
+## Upgrade Subscription
+
+```http
+POST /subscriptions/upgrade/{plan_id}
+```
+
+Authentication required.
+
+Example:
+
+```http
+POST /subscriptions/upgrade/2
+```
+
+Here:
+
+```text
+2 = Premium plan
+```
+
+The API:
+
+1. Finds the selected plan
+2. Checks whether the plan is active
+3. Prevents upgrading to the same plan
+4. Creates subscription dates
+5. Generates a fake transaction ID
+6. Generates an invoice PDF
+7. Creates a billing history record
+8. Updates the user's subscription plan
+
+Example response:
+
+```json
+{
+  "message": "Successfully upgraded to Premium plan.",
+  "plan": "Premium",
+  "amount": 499,
+  "transaction_id": "TXN_8A3D5F107E9B",
+  "invoice": "/media/invoices/invoice_TXN_8A3D5F107E9B.pdf",
+  "start_date": "2026-09-18T10:00:00",
+  "end_date": "2026-10-18T10:00:00"
+}
+```
+
+---
+
+# 🧾 Invoice Generation
+
+A fake subscription invoice is generated using **ReportLab**.
+
+Invoice files are stored in:
+
+```text
+media/invoices/
+```
+
+Example:
+
+```text
+media/invoices/invoice_TXN_8A3D5F107E9B.pdf
+```
+
+The invoice contains:
+
+* User ID
+* Plan name
+* Amount
+* Transaction ID
+* Start date
+* End date
+
+The database stores the invoice path.
+
+---
+
+# 💰 Billing History
+
+Billing records are stored in the:
+
+```text
+billing_history
+```
+
+table.
+
+The billing history contains:
+
+```text
+id
+user_id
+plan_id
+amount
+transaction_id
+invoice_path
+start_date
+end_date
+created_at
+```
+
+---
+
+## Get Billing History
+
+```http
+GET /subscriptions/billing
+```
+
+Authentication required.
+
+The endpoint returns billing records belonging to the currently authenticated user.
+
+---
+
+# 📊 Subscription Database Tables
+
+The project uses the following tables:
+
+1. `users`
+2. `posts`
+3. `comments`
+4. `likes`
+5. `subscription_plans`
+6. `billing_history`
 
 ---
 
@@ -174,15 +460,6 @@ Database file:
 blog.db
 ```
 
-## Database Tables
-
-The following tables are used:
-
-1. `users`
-2. `posts`
-3. `comments`
-4. `likes`
-
 ---
 
 ## Users Table
@@ -194,9 +471,12 @@ id
 username
 email
 password
+subscription_plan_id
 ```
 
 Passwords are stored in **hashed form**, not as plain text.
+
+`subscription_plan_id` connects the user with their current subscription plan.
 
 ---
 
@@ -211,22 +491,6 @@ content
 image
 author_id
 created_at
-```
-
-### Image Column
-
-The `image` column stores the path of the uploaded image.
-
-Example:
-
-```text
-/media/posts/unique_filename.jpg
-```
-
-The actual image is stored inside:
-
-```text
-media/posts/
 ```
 
 ---
@@ -256,6 +520,41 @@ user_id
 ```
 
 A user can like a particular post only once.
+
+---
+
+## Subscription Plans Table
+
+Stores subscription plan configuration.
+
+```text
+id
+name
+price
+max_posts
+max_images
+max_comments
+max_likes
+is_active
+```
+
+---
+
+## Billing History Table
+
+Stores subscription billing information.
+
+```text
+id
+user_id
+plan_id
+amount
+transaction_id
+invoice_path
+start_date
+end_date
+created_at
+```
 
 ---
 
@@ -330,28 +629,22 @@ content
 image
 ```
 
-Example:
-
-```text
-title: My First Blog
-content: This is my first blog post using FastAPI.
-image: images.jpg
-```
-
 The image field is optional.
+
+Before creating the post, the API checks the user's subscription post limit.
 
 ---
 
-## Image Upload Flow
+# 🖼️ Image Upload Flow
 
 ```text
 User selects image
         ↓
 UploadFile receives image
         ↓
-Image is saved to media/posts/
-        ↓
 Unique filename is generated
+        ↓
+Image is saved to media/posts/
         ↓
 Image path is stored in database
         ↓
@@ -360,17 +653,13 @@ API returns image path
 StaticFiles serves the image
 ```
 
-Example database value:
+Example:
 
-```text
-/media/posts/6d33702627e6455aabb19bfffe5731df_images.jpg
+```python
+filename = f"{uuid4().hex}_{image.filename}"
 ```
 
-Example browser URL:
-
-```text
-http://127.0.0.1:8000/media/posts/6d33702627e6455aabb19bfffe5731df_images.jpg
-```
+The UUID helps prevent filename conflicts.
 
 ---
 
@@ -382,7 +671,7 @@ GET /posts/
 
 This endpoint is publicly accessible.
 
-By default:
+Default values:
 
 ```text
 page = 1
@@ -395,38 +684,14 @@ Example:
 GET /posts/?page=1&limit=10
 ```
 
-Example response:
-
-```json
-{
-  "page": 1,
-  "limit": 10,
-  "total_count": 3,
-  "total_pages": 1,
-  "posts": [
-    {
-      "id": 1,
-      "title": "My First Blog Post",
-      "content": "This is my first blog post created using FastAPI and SQLite.",
-      "author_id": 1,
-      "image": null,
-      "created_at": "2026-09-10T17:18:31.546105"
-    }
-  ]
-}
-```
-
 ---
 
 # 🔎 Search Posts
 
-Posts can be searched using the `search` query parameter.
-
-Search checks both:
+Search using:
 
 ```text
-Post title
-Post content
+search
 ```
 
 Example:
@@ -435,22 +700,11 @@ Example:
 GET /posts/?search=thor
 ```
 
-For example, searching:
+Search checks:
 
 ```text
-thor
-```
-
-can find a post with:
-
-```text
-Title: Thor
-```
-
-or content containing:
-
-```text
-Thor
+Post title
+Post content
 ```
 
 The search is case-insensitive.
@@ -458,8 +712,6 @@ The search is case-insensitive.
 ---
 
 # 📑 Pagination
-
-Pagination prevents the API from returning a large number of posts at once.
 
 The API supports:
 
@@ -471,24 +723,10 @@ limit
 Example:
 
 ```http
-GET /posts/?page=1&limit=10
-```
-
-For page 2:
-
-```http
 GET /posts/?page=2&limit=10
 ```
 
-For page 3:
-
-```http
-GET /posts/?page=3&limit=10
-```
-
-### Pagination Formula
-
-The API calculates the number of records to skip using:
+Pagination uses:
 
 ```python
 skip = (page - 1) * limit
@@ -502,78 +740,26 @@ Page 2 → skip 10
 Page 3 → skip 20
 ```
 
-The API also returns:
+The API returns:
 
 ```text
+page
+limit
 total_count
 total_pages
+posts
 ```
 
 ---
 
 # 🔎📑 Search + Pagination
 
-Search and pagination can be used together.
+Search and pagination can be combined.
 
 Example:
 
 ```http
 GET /posts/?page=1&limit=10&search=thor
-```
-
-Example response:
-
-```json
-{
-  "page": 1,
-  "limit": 10,
-  "total_count": 1,
-  "total_pages": 1,
-  "posts": [
-    {
-      "id": 3,
-      "title": "Thor",
-      "content": "Thunder Strom",
-      "author_id": 3,
-      "image": "/media/posts/5d49371ae12244758dc02e8e238a08db_images.jpg",
-      "created_at": "2026-09-16T08:05:26.548122"
-    }
-  ]
-}
-```
-
----
-
-# 📌 Post API Query Parameters
-
-The `/posts/` endpoint supports:
-
-| Parameter | Type    | Default | Description              |
-| --------- | ------- | ------: | ------------------------ |
-| `page`    | integer |       1 | Page number              |
-| `limit`   | integer |      10 | Number of posts per page |
-| `search`  | string  |    None | Search title/content     |
-
-Examples:
-
-```http
-GET /posts/
-```
-
-```http
-GET /posts/?page=2
-```
-
-```http
-GET /posts/?limit=5
-```
-
-```http
-GET /posts/?search=fastapi
-```
-
-```http
-GET /posts/?page=2&limit=5&search=fastapi
 ```
 
 ---
@@ -586,7 +772,7 @@ GET /posts/mine
 
 Authentication required.
 
-This endpoint returns posts created by the currently authenticated user.
+Returns posts created by the currently authenticated user.
 
 ---
 
@@ -628,17 +814,7 @@ The request uses:
 multipart/form-data
 ```
 
-Example:
-
-```text
-title: Updated Blog Title
-content: Updated blog content.
-image: new_image.jpg
-```
-
-The image is optional.
-
-If a new image is uploaded, a new unique filename is generated and the post's image path is updated.
+If a new image is uploaded, a unique filename is generated and the post's image path is updated.
 
 ---
 
@@ -672,6 +848,8 @@ Example:
 }
 ```
 
+Before creating the comment, the API checks the user's subscription comment limit.
+
 ---
 
 ## View Comments
@@ -694,6 +872,12 @@ POST /likes/posts/{post_id}
 
 Authentication required.
 
+The API checks:
+
+1. Whether the post exists
+2. Whether the user already liked the post
+3. Whether the user's subscription like limit has been reached
+
 ---
 
 ## Unlike Post
@@ -703,6 +887,8 @@ DELETE /likes/posts/{post_id}
 ```
 
 Authentication required.
+
+Unlike does not consume a new like limit.
 
 ---
 
@@ -720,8 +906,6 @@ Example response:
   "like_count": 5
 }
 ```
-
-If a user tries to like the same post twice, the API returns an error.
 
 ---
 
@@ -824,16 +1008,112 @@ media/
 
 A unique UUID is added to the filename to prevent filename conflicts.
 
-Example:
+---
 
-```python
-filename = f"{uuid4().hex}_{image.filename}"
-```
+# 🧾 Invoice Storage
 
-The database stores only the URL/path:
+Subscription invoices are stored in:
 
 ```text
-/media/posts/unique_filename.jpg
+media/invoices/
+```
+
+Example:
+
+```text
+media/
+├── posts/
+│   └── uploaded images
+└── invoices/
+    └── invoice_TXN_ABC123.pdf
+```
+
+---
+
+# 🛠️ Technologies Used
+
+* Python
+* FastAPI
+* SQLite
+* SQLAlchemy ORM
+* Pydantic
+* JWT Authentication
+* Passlib
+* Bcrypt
+* SMTP / Gmail
+* Uvicorn
+* Swagger UI
+* UploadFile
+* StaticFiles
+* ReportLab
+* Django Admin
+
+---
+
+# 📁 Project Structure
+
+```text
+Blog_Management_API/
+│
+├── .env
+├── .gitignore
+├── blog.db
+├── requirements.txt
+├── README.md
+├── seed_plans.py
+├── assign_basic_plan.py
+│
+├── media/
+│   ├── posts/
+│   │   └── uploaded images
+│   │
+│   └── invoices/
+│       └── generated invoices
+│
+├── Screenshots/
+│
+├── app/
+│   │
+│   ├── __init__.py
+│   ├── main.py
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── auth.py
+│   ├── dependencies.py
+│   │
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── email.py
+│   │   └── subscription.py
+│   │
+│   └── routers/
+│       ├── __init__.py
+│       ├── auth.py
+│       ├── post.py
+│       ├── comment.py
+│       ├── like.py
+│       └── subscription.py
+│
+└── django_admin/
+    │
+    ├── manage.py
+    │
+    ├── django_admin/
+    │   ├── __init__.py
+    │   ├── settings.py
+    │   ├── urls.py
+    │   ├── asgi.py
+    │   └── wsgi.py
+    │
+    └── subscriptions/
+        ├── __init__.py
+        ├── admin.py
+        ├── apps.py
+        ├── models.py
+        ├── migrations/
+        ├── tests.py
+        └── views.py
 ```
 
 ---
@@ -870,6 +1150,12 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
+If ReportLab is not installed:
+
+```powershell
+pip install reportlab
+```
+
 ---
 
 ## 5. Configure Environment Variables
@@ -889,7 +1175,31 @@ Do not upload real credentials to GitHub.
 
 ---
 
-## 6. Run the FastAPI Server
+# 🌱 Initialize Subscription Plans
+
+Run:
+
+```powershell
+python seed_plans.py
+```
+
+This creates:
+
+```text
+Basic
+Premium
+Pro
+```
+
+Then assign the Basic plan to users who do not currently have a subscription:
+
+```powershell
+python assign_basic_plan.py
+```
+
+---
+
+# ▶️ Run the FastAPI Server
 
 ```powershell
 uvicorn app.main:app --reload
@@ -923,15 +1233,70 @@ Swagger can be used to test:
 * Search
 * Search + pagination
 * Comments
+* Comment subscription limits
 * Likes
+* Like limits
+* Unlike
 * Validation
 * Authorization
+* Subscription plans
+* Subscription upgrade
+* Billing history
+
+---
+
+# 🖥️ Django Admin
+
+The project also contains a Django Admin interface for viewing subscription and billing information.
+
+Run Django from the `django_admin` folder:
+
+```powershell
+cd django_admin
+python manage.py runserver 8001
+```
+
+Open:
+
+```text
+http://127.0.0.1:8001/admin/
+```
+
+Django Admin provides:
+
+* Subscription Plans
+* Billing History
+* Plan limit information
+* Transaction IDs
+* Invoice paths
+* Subscription dates
+* Billing records
+
+Subscription plans are displayed horizontally:
+
+```text
+ID | Name | Price | Max Posts | Max Images | Max Comments | Max Likes | Is Active
+```
+
+Billing history is displayed horizontally:
+
+```text
+ID | User ID | Plan ID | Amount | Transaction ID | Invoice Path | Start Date | End Date | Created At
+```
+
+Subscription plans are ordered:
+
+```text
+1 → Basic
+2 → Premium
+3 → Pro
+```
+
+Billing history is ordered with the newest billing record first.
 
 ---
 
 # 🧪 API Testing Flow
-
-Recommended testing order:
 
 ## Step 1 — Register
 
@@ -965,7 +1330,23 @@ Bearer YOUR_ACCESS_TOKEN
 
 ---
 
-## Step 4 — Create Post
+## Step 4 — Check Subscription Plans
+
+```http
+GET /subscriptions/plans
+```
+
+Verify:
+
+```text
+Basic
+Premium
+Pro
+```
+
+---
+
+## Step 5 — Create Post
 
 ```http
 POST /posts/
@@ -979,31 +1360,116 @@ content
 image
 ```
 
-Upload an image using the `image` field.
+Test the subscription post limit.
 
 ---
 
-## Step 5 — View Posts
+## Step 6 — Add Comments
 
 ```http
-GET /posts/
+POST /comments/posts/{post_id}
+```
+
+Test the comment limit according to the user's plan.
+
+---
+
+## Step 7 — Like Post
+
+```http
+POST /likes/posts/{post_id}
+```
+
+Test:
+
+* Normal like
+* Duplicate like
+* Subscription like limit
+
+---
+
+## Step 8 — Unlike Post
+
+```http
+DELETE /likes/posts/{post_id}
+```
+
+Verify that the like is removed.
+
+---
+
+## Step 9 — Upgrade Subscription
+
+Example:
+
+```http
+POST /subscriptions/upgrade/2
+```
+
+This upgrades the user to Premium.
+
+---
+
+## Step 10 — Verify Billing
+
+```http
+GET /subscriptions/billing
 ```
 
 Verify:
 
+* Transaction ID
+* Amount
+* Plan ID
+* Invoice path
+* Start date
+* End date
+
+---
+
+## Step 11 — Verify Invoice
+
+Check:
+
 ```text
-page
-limit
-total_count
-total_pages
-posts
+media/invoices/
+```
+
+The generated PDF should be present.
+
+---
+
+## Step 12 — Test Premium Limits
+
+Verify that Premium allows:
+
+```text
+2 posts
+50 comments
+50 likes
 ```
 
 ---
 
-## Step 6 — Test Pagination
+## Step 13 — Test Pro
 
-Example:
+Upgrade to:
+
+```http
+POST /subscriptions/upgrade/3
+```
+
+Verify that Pro has unlimited:
+
+```text
+Posts
+Comments
+Likes
+```
+
+---
+
+## Step 14 — Test Pagination
 
 ```http
 GET /posts/?page=1&limit=2
@@ -1019,9 +1485,7 @@ Verify that different pages return different records when enough posts exist.
 
 ---
 
-## Step 7 — Test Search
-
-Example:
+## Step 15 — Test Search
 
 ```http
 GET /posts/?search=thor
@@ -1031,9 +1495,7 @@ Verify that matching title/content is returned.
 
 ---
 
-## Step 8 — Test Search + Pagination
-
-Example:
+## Step 16 — Test Search + Pagination
 
 ```http
 GET /posts/?page=1&limit=10&search=thor
@@ -1051,11 +1513,9 @@ posts
 
 ---
 
-## Step 9 — Test Image URL
+## Step 17 — Test Image URL
 
-Copy the returned image path.
-
-Example:
+Copy the returned image path:
 
 ```text
 /media/posts/unique_image.jpg
@@ -1071,39 +1531,7 @@ The uploaded image should be displayed.
 
 ---
 
-## Step 10 — Add Comment
-
-```http
-POST /comments/posts/{post_id}
-```
-
----
-
-## Step 11 — Like Post
-
-```http
-POST /likes/posts/{post_id}
-```
-
----
-
-## Step 12 — Check Like Count
-
-```http
-GET /likes/posts/{post_id}/count
-```
-
----
-
-## Step 13 — Unlike Post
-
-```http
-DELETE /likes/posts/{post_id}
-```
-
----
-
-## Step 14 — Update Post
+## Step 18 — Update Post
 
 ```http
 PUT /posts/{post_id}
@@ -1111,13 +1539,13 @@ PUT /posts/{post_id}
 
 Test:
 
-* title update
-* content update
-* image update
+* Title update
+* Content update
+* Image update
 
 ---
 
-## Step 15 — Delete Post
+## Step 19 — Delete Post
 
 ```http
 DELETE /posts/{post_id}
@@ -1142,6 +1570,8 @@ users
 posts
 comments
 likes
+subscription_plans
+billing_history
 ```
 
 ---
@@ -1158,17 +1588,6 @@ SELECT * FROM users;
 
 ```sql
 SELECT * FROM posts;
-```
-
-The posts table should now contain:
-
-```text
-id
-title
-content
-image
-author_id
-created_at
 ```
 
 ---
@@ -1189,11 +1608,27 @@ SELECT * FROM likes;
 
 ---
 
+## Verify Subscription Plans
+
+```sql
+SELECT * FROM subscription_plans;
+```
+
+---
+
+## Verify Billing History
+
+```sql
+SELECT * FROM billing_history;
+```
+
+---
+
 # 📸 Project Deliverables
 
-The following screenshots can be included for submission:
+## Swagger
 
-### Swagger
+Screenshots can include:
 
 * Swagger `/docs`
 * Register
@@ -1207,23 +1642,61 @@ The following screenshots can be included for submission:
 * Update Post with Image
 * Delete Post
 * Add Comment
+* Comment Limit Validation
 * Like Post
+* Like Limit Validation
 * Unlike Post
 * Like Count
+* Subscription Plans
+* Upgrade Subscription
+* Billing History
 
-### Database
+## Database
+
+Screenshots can include:
 
 * SQLite `users` table
 * SQLite `posts` table
 * SQLite `comments` table
 * SQLite `likes` table
+* SQLite `subscription_plans` table
+* SQLite `billing_history` table
 
-### Image Upload
+## Subscription
+
+Screenshots can include:
+
+* Basic plan
+* Premium plan
+* Pro plan
+* Post limit validation
+* Comment limit validation
+* Like limit validation
+* Successful upgrade
+* Transaction ID
+* Generated invoice
+
+## Django Admin
+
+Screenshots can include:
+
+* Subscription Plans list
+* Billing History list
+* Plan limits
+* Billing details
+* Transaction ID
+* Invoice path
+
+## Image Upload
+
+Screenshots can include:
 
 * Uploaded image inside `media/posts/`
 * Browser displaying the image URL
 
-### Email
+## Email
+
+Screenshots can include:
 
 * Email notification for a new comment
 * Email notification for a new like
@@ -1231,6 +1704,8 @@ The following screenshots can be included for submission:
 ---
 
 # 🎯 Features Completed
+
+## Core API
 
 * [x] FastAPI application
 * [x] SQLite database
@@ -1250,12 +1725,18 @@ The following screenshots can be included for submission:
 * [x] Duplicate like validation
 * [x] Pydantic validation
 * [x] Email notifications
-* [x] Swagger documentation
-* [x] SQLite table verification
+* [x] Swagger API documentation
+
+## Image Upload
+
 * [x] Post image upload
 * [x] Post image update
 * [x] Image URL/path in API response
 * [x] Static image serving
+* [x] Unique image filenames
+
+## Pagination & Search
+
 * [x] Posts pagination
 * [x] Total post count
 * [x] Total page calculation
@@ -1264,26 +1745,38 @@ The following screenshots can be included for submission:
 * [x] Search by content
 * [x] Search with pagination
 
----
+## Subscription & Billing
 
-# 📋 New Assignment Requirements
+* [x] Basic subscription plan
+* [x] Premium subscription plan
+* [x] Pro subscription plan
+* [x] Subscription plan limits
+* [x] Post subscription limit
+* [x] Comment subscription limit
+* [x] Like subscription limit
+* [x] Image limit configuration
+* [x] Unlimited Pro plan
+* [x] Friendly subscription limit message
+* [x] Subscription upgrade API
+* [x] Plan selection using plan ID
+* [x] 30-day subscription period
+* [x] Fake transaction ID
+* [x] Billing history
+* [x] Invoice PDF generation
+* [x] ReportLab invoice generation
+* [x] Invoice path stored in database
+* [x] Current-user billing history API
 
-## Image Upload
+## Django Admin
 
-* [x] Upload image when creating a post
-* [x] Upload image when editing a post
-* [x] Add image field to Post model
-* [x] Store uploaded images in `media/posts/`
-* [x] Use FastAPI `UploadFile`
-* [x] Return image path in API response
-
-## Pagination & Search
-
-* [x] `GET /posts/?page=1&limit=10`
-* [x] Search using `search` query parameter
-* [x] Combine search and pagination
-* [x] Return total count
-* [x] Return total pages
+* [x] Django Admin setup
+* [x] Subscription Plans Admin
+* [x] Billing History Admin
+* [x] Horizontal plan columns
+* [x] Horizontal billing columns
+* [x] Plan ordering
+* [x] Billing ordering
+* [x] Transaction ID links
 
 ---
 
@@ -1315,5 +1808,12 @@ It includes:
 * Pydantic validation
 * Email notifications
 * Swagger API documentation
+* Subscription-based access control
+* Basic, Premium, and Pro plans
+* Post, comment, and like limits
+* Subscription upgrade functionality
+* Billing history
+* Fake invoice PDF generation
+* Django Admin subscription management
 
-The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, and pagination.
+The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, and administrative management.
