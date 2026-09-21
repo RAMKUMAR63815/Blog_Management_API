@@ -1,6 +1,6 @@
 # Blog Management API
 
-A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Subscription-Based Access Control, Billing, and Invoice Generation**.
+A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Subscription-Based Access Control, Billing, Invoice Generation, and Django Admin**.
 
 ---
 
@@ -59,7 +59,7 @@ http://127.0.0.1:8000/media/posts/6d33702627e6455aabb19bfffe5731df_images.jpg
 
 ---
 
-## 2. Pagination
+# 2. Pagination
 
 The posts API supports pagination using:
 
@@ -74,7 +74,7 @@ Example:
 GET /posts/?page=1&limit=10
 ```
 
-Response includes:
+The response includes:
 
 * Current page
 * Records per page
@@ -84,7 +84,7 @@ Response includes:
 
 ---
 
-## 3. Search
+# 3. Search
 
 Posts can be searched using a keyword.
 
@@ -103,7 +103,7 @@ The search is case-insensitive.
 
 ---
 
-## 4. Search + Pagination
+# 4. Search + Pagination
 
 Search and pagination can be used together.
 
@@ -112,6 +112,8 @@ Example:
 ```http
 GET /posts/?page=1&limit=10&search=fastapi
 ```
+
+The API first filters matching posts and then applies pagination to the matching results.
 
 ---
 
@@ -123,7 +125,7 @@ The API provides three subscription plans:
 * Premium
 * Pro
 
-Each subscription plan has different limits for posts, comments, and likes.
+Each subscription plan has different limits for posts, images, comments, and likes.
 
 ## Subscription Plans
 
@@ -139,7 +141,7 @@ Each subscription plan has different limits for posts, comments, and likes.
 
 ---
 
-## Subscription Flow
+# 🔄 Subscription Flow
 
 ```text
 User
@@ -176,7 +178,6 @@ Example:
 ```text
 Basic Plan
 Maximum posts = 1
-
 Existing posts = 1
         ↓
 Limit reached
@@ -207,7 +208,6 @@ Example:
 ```text
 Basic Plan
 Maximum comments = 10
-
 Existing comments = 10
         ↓
 Limit reached
@@ -230,7 +230,6 @@ Example:
 ```text
 Basic Plan
 Maximum likes = 10
-
 Existing likes = 10
         ↓
 Limit reached
@@ -244,7 +243,7 @@ Pro users have unlimited likes.
 
 ---
 
-## Duplicate Like Validation
+# ❤️ Duplicate Like Validation
 
 The subscription limit and duplicate-like validation are separate checks.
 
@@ -329,7 +328,7 @@ Example:
 POST /subscriptions/upgrade/{plan_id}
 ```
 
-Authentication required.
+Authentication is required.
 
 Example:
 
@@ -346,13 +345,15 @@ Here:
 The API:
 
 1. Finds the selected plan
-2. Checks whether the plan is active
-3. Prevents upgrading to the same plan
-4. Creates subscription dates
-5. Generates a fake transaction ID
-6. Generates an invoice PDF
-7. Creates a billing history record
-8. Updates the user's subscription plan
+2. Checks whether the plan exists
+3. Checks whether the plan is active
+4. Prevents an invalid subscription
+5. Creates subscription dates
+6. Generates a fake transaction ID
+7. Generates an invoice PDF
+8. Creates a billing history record
+9. Updates the user's subscription plan
+10. Returns subscription details
 
 Example response:
 
@@ -372,7 +373,7 @@ Example response:
 
 # 🧾 Invoice Generation
 
-A fake subscription invoice is generated using **ReportLab**.
+A subscription invoice is generated using **ReportLab**.
 
 Invoice files are stored in:
 
@@ -431,13 +432,408 @@ created_at
 GET /subscriptions/billing
 ```
 
-Authentication required.
+Authentication is required.
 
 The endpoint returns billing records belonging to the currently authenticated user.
 
 ---
 
-# 📊 Subscription Database Tables
+# 📧 Email Notification System
+
+The application sends email notifications whenever another user interacts with a user's blog post.
+
+Email notifications are generated for:
+
+* New comments
+* New likes
+
+The email system uses:
+
+* Python `smtplib`
+* SMTP
+* FastAPI `BackgroundTasks`
+* `.env` configuration
+* Mailtrap for testing
+* Modular email and notification services
+
+---
+
+# 📩 Comment Email Notification
+
+When another user comments on a blog post, the post owner receives an email notification.
+
+The email contains:
+
+* Post title
+* Name of the user who commented
+* Activity type
+* Comment text
+* Timestamp
+
+Example:
+
+```text
+Hello,
+
+Ramkumar has commented on your blog post.
+
+Post Title:
+Introduction to FastAPI
+
+Comment:
+Great blog post!
+
+Activity Type:
+Comment
+
+Timestamp:
+2026-09-21 10:30 AM
+
+Thank you,
+Blog Management API
+```
+
+The post owner does not receive a notification when commenting on their own post.
+
+---
+
+# ❤️ Like Email Notification
+
+When another user likes a blog post, the post owner receives an email notification.
+
+The email contains:
+
+* Post title
+* Name of the user who liked the post
+* Activity type
+* Timestamp
+
+Example:
+
+```text
+Hello,
+
+Arun liked your blog post.
+
+Post Title:
+Introduction to FastAPI
+
+Activity Type:
+Like
+
+Timestamp:
+2026-09-21 10:35 AM
+
+Thank you,
+Blog Management API
+```
+
+The post owner does not receive a notification when liking their own post.
+
+---
+
+# ⚙️ Email Architecture
+
+The email system follows a modular structure:
+
+```text
+Comment / Like Endpoint
+        ↓
+FastAPI BackgroundTasks
+        ↓
+notification_service.py
+        ↓
+email_service.py
+        ↓
+SMTP
+        ↓
+Mailtrap / Gmail
+```
+
+This separates:
+
+* API endpoint logic
+* Notification logic
+* Email sending logic
+
+---
+
+# 📁 Email Service
+
+Email sending is handled by:
+
+```text
+app/services/email_service.py
+```
+
+This file is responsible for:
+
+* Reading SMTP configuration
+* Creating the email
+* Connecting to SMTP
+* Starting TLS encryption
+* Authenticating with SMTP
+* Sending the email
+* Handling SMTP errors
+
+The email service uses Python's built-in:
+
+```python
+smtplib
+```
+
+---
+
+# 🔔 Notification Service
+
+Notification logic is handled by:
+
+```text
+app/services/notification_service.py
+```
+
+This file is responsible for:
+
+* Creating comment notification messages
+* Creating like notification messages
+* Adding the post title
+* Adding the activity user's name
+* Adding the activity type
+* Adding the timestamp
+* Calling the email service
+
+This keeps notification-specific logic separate from SMTP communication.
+
+---
+
+# 🚀 Background Email Processing
+
+FastAPI `BackgroundTasks` is used so email sending happens after the API response is prepared.
+
+Example:
+
+```python
+background_tasks.add_task(
+    send_like_notification,
+    post_author_email=post.author.email,
+    liker_username=current_user.username,
+    post_title=post.title
+)
+```
+
+For comments:
+
+```python
+background_tasks.add_task(
+    send_comment_notification,
+    post_author_email=post.author.email,
+    commenter_username=current_user.username,
+    post_title=post.title,
+    comment_text=comment_data.text
+)
+```
+
+The SMTP operation itself is synchronous because `smtplib` is a synchronous Python library.
+
+`BackgroundTasks` moves that email operation into FastAPI's background execution instead of making the API endpoint wait for the SMTP operation before returning its response.
+
+---
+
+# 🧩 Why BackgroundTasks Is Used
+
+Without background processing:
+
+```text
+User
+ ↓
+Like Post
+ ↓
+Save Like
+ ↓
+Connect SMTP
+ ↓
+Login SMTP
+ ↓
+Send Email
+ ↓
+Return API Response
+```
+
+The API request has to wait for the email operation.
+
+With `BackgroundTasks`:
+
+```text
+User
+ ↓
+Like Post
+ ↓
+Save Like
+ ↓
+Schedule Email
+ ↓
+Return API Response
+ ↓
+Background Task
+ ↓
+SMTP
+ ↓
+Send Email
+```
+
+This makes the API request independent from the email delivery operation.
+
+For this project, FastAPI `BackgroundTasks` is suitable because it is simple and does not require an additional Redis or Celery infrastructure.
+
+---
+
+# 🛡️ Graceful Email Error Handling
+
+Email failures are handled inside the email service.
+
+Examples of possible errors:
+
+* Missing SMTP username
+* Missing SMTP password
+* SMTP authentication failure
+* SMTP connection failure
+* Other SMTP errors
+
+Email failure does not cause the notification logic to crash the main API request.
+
+Example:
+
+```text
+EMAIL CONFIGURATION ERROR
+EMAIL_USERNAME or EMAIL_PASSWORD is missing.
+Please check your .env file.
+```
+
+SMTP authentication errors are also handled separately.
+
+---
+
+# 🧪 Mailtrap Email Testing
+
+Mailtrap can be used as a testing SMTP server.
+
+Instead of sending test emails to real user inboxes, Mailtrap captures the emails so they can be inspected during development.
+
+The SMTP credentials should be taken from the Mailtrap Email Testing/Sandbox integration settings.
+
+Example `.env`:
+
+```env
+SMTP_SERVER=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+
+EMAIL_USERNAME=YOUR_MAILTRAP_USERNAME
+EMAIL_PASSWORD=YOUR_MAILTRAP_PASSWORD
+```
+
+Use the exact SMTP host, port, username, and password shown in your Mailtrap sandbox integration settings.
+
+**Never commit real SMTP credentials to GitHub.**
+
+---
+
+# 📧 Gmail SMTP
+
+Gmail SMTP can also be configured when required.
+
+Example:
+
+```env
+EMAIL_USERNAME=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+```
+
+For Gmail, use an App Password rather than exposing your normal Gmail account password.
+
+---
+
+# 🔒 Environment Variables
+
+Email configuration is stored in:
+
+```text
+.env
+```
+
+Example:
+
+```env
+SMTP_SERVER=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+EMAIL_USERNAME=your_mailtrap_username
+EMAIL_PASSWORD=your_mailtrap_password
+```
+
+The `.env` file must not be committed to GitHub.
+
+The `.gitignore` file should contain:
+
+```text
+.env
+venv/
+__pycache__/
+*.pyc
+```
+
+---
+
+# 🧪 Testing Email Notifications
+
+## Test Comment Notification
+
+1. Start the FastAPI server.
+2. Register two users.
+3. Login as the post owner.
+4. Create a blog post.
+5. Login as another user.
+6. Add a comment to the post.
+7. The comment API returns its normal response.
+8. The email notification is processed as a background task.
+9. Open Mailtrap.
+10. Verify the captured email.
+
+Check:
+
+```text
+Post Title
+Commenter Name
+Activity Type
+Comment
+Timestamp
+```
+
+---
+
+## Test Like Notification
+
+1. Login as the post owner.
+2. Create a post.
+3. Login as another user.
+4. Like the post.
+5. The API returns the successful like response.
+6. The email notification runs in the background.
+7. Open Mailtrap.
+8. Verify the captured email.
+
+Check:
+
+```text
+Post Title
+Liker Name
+Activity Type
+Timestamp
+```
+
+---
+
+# 🗄️ Subscription Database Tables
 
 The project uses the following tables:
 
@@ -462,7 +858,7 @@ blog.db
 
 ---
 
-## Users Table
+# 👤 Users Table
 
 Stores registered users.
 
@@ -478,9 +874,19 @@ Passwords are stored in **hashed form**, not as plain text.
 
 `subscription_plan_id` connects the user with their current subscription plan.
 
+Relationship:
+
+```text
+users
+  |
+  | subscription_plan_id
+  ↓
+subscription_plans.id
+```
+
 ---
 
-## Posts Table
+# 📝 Posts Table
 
 Stores blog posts.
 
@@ -493,9 +899,22 @@ author_id
 created_at
 ```
 
+`author_id` identifies the user who created the post.
+
+Relationship:
+
+```text
+users.id
+    ↑
+    |
+author_id
+    |
+posts
+```
+
 ---
 
-## Comments Table
+# 💬 Comments Table
 
 Stores comments made on blog posts.
 
@@ -507,9 +926,23 @@ text
 created_at
 ```
 
+Relationships:
+
+```text
+posts.id
+   ↑
+   |
+post_id
+
+users.id
+   ↑
+   |
+user_id
+```
+
 ---
 
-## Likes Table
+# ❤️ Likes Table
 
 Stores likes given to posts.
 
@@ -519,11 +952,25 @@ post_id
 user_id
 ```
 
+Relationships:
+
+```text
+posts.id
+   ↑
+   |
+post_id
+
+users.id
+   ↑
+   |
+user_id
+```
+
 A user can like a particular post only once.
 
 ---
 
-## Subscription Plans Table
+# 💳 Subscription Plans Table
 
 Stores subscription plan configuration.
 
@@ -538,9 +985,17 @@ max_likes
 is_active
 ```
 
+Example:
+
+```text
+Basic
+Premium
+Pro
+```
+
 ---
 
-## Billing History Table
+# 🧾 Billing History Table
 
 Stores subscription billing information.
 
@@ -564,7 +1019,7 @@ The API uses **JWT (JSON Web Token)** authentication.
 
 ---
 
-## Register
+# 📝 Register
 
 ```http
 POST /auth/register
@@ -582,7 +1037,7 @@ Example request:
 
 ---
 
-## Login
+# 🔑 Login
 
 ```http
 POST /auth/login
@@ -611,7 +1066,7 @@ The token is used to access protected APIs.
 POST /posts/
 ```
 
-Authentication required.
+Authentication is required.
 
 The create-post API uses:
 
@@ -652,6 +1107,8 @@ API returns image path
         ↓
 StaticFiles serves the image
 ```
+
+A UUID is used to create unique filenames.
 
 Example:
 
@@ -770,7 +1227,7 @@ GET /posts/?page=1&limit=10&search=thor
 GET /posts/mine
 ```
 
-Authentication required.
+Authentication is required.
 
 Returns posts created by the currently authenticated user.
 
@@ -796,7 +1253,7 @@ GET /posts/1
 PUT /posts/{post_id}
 ```
 
-Authentication required.
+Authentication is required.
 
 Only the post owner can update the post.
 
@@ -824,7 +1281,7 @@ If a new image is uploaded, a unique filename is generated and the post's image 
 DELETE /posts/{post_id}
 ```
 
-Authentication required.
+Authentication is required.
 
 Only the post owner can delete the post.
 
@@ -838,7 +1295,7 @@ Only the post owner can delete the post.
 POST /comments/posts/{post_id}
 ```
 
-Authentication required.
+Authentication is required.
 
 Example:
 
@@ -850,9 +1307,25 @@ Example:
 
 Before creating the comment, the API checks the user's subscription comment limit.
 
+After the comment is successfully created:
+
+```text
+Comment Created
+      ↓
+Check Post Owner
+      ↓
+If commenter != post owner
+      ↓
+BackgroundTasks
+      ↓
+Notification Service
+      ↓
+Email Service
+```
+
 ---
 
-## View Comments
+# 👀 View Comments
 
 ```http
 GET /comments/posts/{post_id}
@@ -870,7 +1343,7 @@ Comments can be viewed publicly.
 POST /likes/posts/{post_id}
 ```
 
-Authentication required.
+Authentication is required.
 
 The API checks:
 
@@ -878,21 +1351,37 @@ The API checks:
 2. Whether the user already liked the post
 3. Whether the user's subscription like limit has been reached
 
+After the like is successfully created:
+
+```text
+Like Created
+     ↓
+Check Post Owner
+     ↓
+If liker != post owner
+     ↓
+BackgroundTasks
+     ↓
+Notification Service
+     ↓
+Email Service
+```
+
 ---
 
-## Unlike Post
+# Unlike Post
 
 ```http
 DELETE /likes/posts/{post_id}
 ```
 
-Authentication required.
+Authentication is required.
 
 Unlike does not consume a new like limit.
 
 ---
 
-## Get Like Count
+# Get Like Count
 
 ```http
 GET /likes/posts/{post_id}/count
@@ -906,33 +1395,6 @@ Example response:
   "like_count": 5
 }
 ```
-
----
-
-# 📧 Email Notifications
-
-The application sends email notifications when:
-
-## New Comment
-
-When another user comments on a post, the post owner receives an email notification.
-
-## New Like
-
-When another user likes a post, the post owner receives an email notification.
-
-Email configuration is stored in the `.env` file.
-
-Example:
-
-```env
-EMAIL_USERNAME=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-```
-
-**Never commit your real email password or App Password to GitHub.**
 
 ---
 
@@ -1038,9 +1500,11 @@ media/
 * SQLAlchemy ORM
 * Pydantic
 * JWT Authentication
-* Passlib
-* Bcrypt
-* SMTP / Gmail
+* Passlib / Bcrypt
+* Python `smtplib`
+* SMTP
+* Mailtrap for email testing
+* FastAPI BackgroundTasks
 * Uvicorn
 * Swagger UI
 * UploadFile
@@ -1082,9 +1546,13 @@ Blog_Management_API/
 │   ├── auth.py
 │   ├── dependencies.py
 │   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── email_service.py
+│   │   └── notification_service.py
+│   │
 │   ├── utils/
 │   │   ├── __init__.py
-│   │   ├── email.py
 │   │   └── subscription.py
 │   │
 │   └── routers/
@@ -1114,6 +1582,66 @@ Blog_Management_API/
         ├── migrations/
         ├── tests.py
         └── views.py
+```
+
+---
+
+# 📌 Service Responsibilities
+
+## email_service.py
+
+Responsible for actual email delivery.
+
+```text
+SMTP configuration
+       ↓
+Create email
+       ↓
+Connect SMTP
+       ↓
+TLS
+       ↓
+Login
+       ↓
+Send email
+```
+
+---
+
+## notification_service.py
+
+Responsible for creating activity notifications.
+
+```text
+Comment activity
+       ↓
+Create comment email
+       ↓
+Call email_service
+```
+
+and:
+
+```text
+Like activity
+       ↓
+Create like email
+       ↓
+Call email_service
+```
+
+---
+
+## subscription.py
+
+Responsible for subscription access control.
+
+It checks:
+
+```text
+Post limits
+Comment limits
+Like limits
 ```
 
 ---
@@ -1158,17 +1686,28 @@ pip install reportlab
 
 ---
 
-## 5. Configure Environment Variables
+# 📧 Configure Email
 
 Create a `.env` file in the project root.
 
-Example:
+For Mailtrap testing:
 
 ```env
-EMAIL_USERNAME=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
+SMTP_SERVER=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+EMAIL_USERNAME=YOUR_MAILTRAP_USERNAME
+EMAIL_PASSWORD=YOUR_MAILTRAP_PASSWORD
+```
+
+Use the exact SMTP credentials provided by your Mailtrap sandbox.
+
+For Gmail SMTP:
+
+```env
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
+EMAIL_USERNAME=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
 ```
 
 Do not upload real credentials to GitHub.
@@ -1200,6 +1739,8 @@ python assign_basic_plan.py
 ---
 
 # ▶️ Run the FastAPI Server
+
+From the project root:
 
 ```powershell
 uvicorn app.main:app --reload
@@ -1234,9 +1775,12 @@ Swagger can be used to test:
 * Search + pagination
 * Comments
 * Comment subscription limits
+* Comment email notifications
 * Likes
 * Like limits
+* Like email notifications
 * Unlike
+* Like count
 * Validation
 * Authorization
 * Subscription plans
@@ -1364,17 +1908,39 @@ Test the subscription post limit.
 
 ---
 
-## Step 6 — Add Comments
+## Step 6 — Add Comment
 
 ```http
 POST /comments/posts/{post_id}
 ```
 
-Test the comment limit according to the user's plan.
+Test:
+
+```text
+Comment creation
+Comment subscription limit
+Comment email notification
+```
+
+Use a second user to comment on the post so the post owner receives the notification.
 
 ---
 
-## Step 7 — Like Post
+## Step 7 — Verify Comment Email
+
+Open Mailtrap and verify:
+
+```text
+Post Title
+Commenter Name
+Activity Type
+Comment
+Timestamp
+```
+
+---
+
+## Step 8 — Like Post
 
 ```http
 POST /likes/posts/{post_id}
@@ -1385,10 +1951,26 @@ Test:
 * Normal like
 * Duplicate like
 * Subscription like limit
+* Like email notification
+
+Use a second user to like the post so the post owner receives the notification.
 
 ---
 
-## Step 8 — Unlike Post
+## Step 9 — Verify Like Email
+
+Open Mailtrap and verify:
+
+```text
+Post Title
+Liker Name
+Activity Type
+Timestamp
+```
+
+---
+
+## Step 10 — Unlike Post
 
 ```http
 DELETE /likes/posts/{post_id}
@@ -1398,7 +1980,7 @@ Verify that the like is removed.
 
 ---
 
-## Step 9 — Upgrade Subscription
+## Step 11 — Upgrade Subscription
 
 Example:
 
@@ -1410,7 +1992,7 @@ This upgrades the user to Premium.
 
 ---
 
-## Step 10 — Verify Billing
+## Step 12 — Verify Billing
 
 ```http
 GET /subscriptions/billing
@@ -1427,7 +2009,7 @@ Verify:
 
 ---
 
-## Step 11 — Verify Invoice
+## Step 13 — Verify Invoice
 
 Check:
 
@@ -1439,7 +2021,7 @@ The generated PDF should be present.
 
 ---
 
-## Step 12 — Test Premium Limits
+## Step 14 — Test Premium Limits
 
 Verify that Premium allows:
 
@@ -1451,7 +2033,7 @@ Verify that Premium allows:
 
 ---
 
-## Step 13 — Test Pro
+## Step 15 — Test Pro
 
 Upgrade to:
 
@@ -1469,7 +2051,7 @@ Likes
 
 ---
 
-## Step 14 — Test Pagination
+## Step 16 — Test Pagination
 
 ```http
 GET /posts/?page=1&limit=2
@@ -1485,7 +2067,7 @@ Verify that different pages return different records when enough posts exist.
 
 ---
 
-## Step 15 — Test Search
+## Step 17 — Test Search
 
 ```http
 GET /posts/?search=thor
@@ -1495,7 +2077,7 @@ Verify that matching title/content is returned.
 
 ---
 
-## Step 16 — Test Search + Pagination
+## Step 18 — Test Search + Pagination
 
 ```http
 GET /posts/?page=1&limit=10&search=thor
@@ -1513,7 +2095,7 @@ posts
 
 ---
 
-## Step 17 — Test Image URL
+## Step 19 — Test Image URL
 
 Copy the returned image path:
 
@@ -1531,7 +2113,7 @@ The uploaded image should be displayed.
 
 ---
 
-## Step 18 — Update Post
+## Step 20 — Update Post
 
 ```http
 PUT /posts/{post_id}
@@ -1545,7 +2127,7 @@ Test:
 
 ---
 
-## Step 19 — Delete Post
+## Step 21 — Delete Post
 
 ```http
 DELETE /posts/{post_id}
@@ -1651,7 +2233,40 @@ Screenshots can include:
 * Upgrade Subscription
 * Billing History
 
-## Database
+---
+
+# 📧 Email Notification Screenshots
+
+Screenshots should include:
+
+### Comment Notification
+
+Show the Mailtrap captured email containing:
+
+```text
+Post Title
+Commenter Name
+Activity Type: Comment
+Comment
+Timestamp
+```
+
+### Like Notification
+
+Show the Mailtrap captured email containing:
+
+```text
+Post Title
+Liker Name
+Activity Type: Like
+Timestamp
+```
+
+It is also useful to capture the Swagger request/response showing that the comment or like was successfully created.
+
+---
+
+# 🗄️ Database Screenshots
 
 Screenshots can include:
 
@@ -1662,7 +2277,9 @@ Screenshots can include:
 * SQLite `subscription_plans` table
 * SQLite `billing_history` table
 
-## Subscription
+---
+
+# 💳 Subscription Screenshots
 
 Screenshots can include:
 
@@ -1675,8 +2292,11 @@ Screenshots can include:
 * Successful upgrade
 * Transaction ID
 * Generated invoice
+* Billing history
 
-## Django Admin
+---
+
+# 🖥️ Django Admin Screenshots
 
 Screenshots can include:
 
@@ -1686,20 +2306,35 @@ Screenshots can include:
 * Billing details
 * Transaction ID
 * Invoice path
+* Subscription dates
 
-## Image Upload
+---
+
+# 🖼️ Image Upload Screenshots
 
 Screenshots can include:
 
+* Swagger image upload
 * Uploaded image inside `media/posts/`
+* API response containing image path
 * Browser displaying the image URL
 
-## Email
+---
+
+# 📧 Email Testing Screenshots
 
 Screenshots can include:
 
-* Email notification for a new comment
-* Email notification for a new like
+* Mailtrap SMTP configuration
+* Captured comment notification
+* Captured like notification
+* Email subject
+* Email body
+* Timestamp
+* API response for comment
+* API response for like
+
+Do not include SMTP usernames/passwords or other private credentials in screenshots.
 
 ---
 
@@ -1724,8 +2359,9 @@ Screenshots can include:
 * [x] Unlike functionality
 * [x] Duplicate like validation
 * [x] Pydantic validation
-* [x] Email notifications
 * [x] Swagger API documentation
+
+---
 
 ## Image Upload
 
@@ -1734,6 +2370,8 @@ Screenshots can include:
 * [x] Image URL/path in API response
 * [x] Static image serving
 * [x] Unique image filenames
+
+---
 
 ## Pagination & Search
 
@@ -1744,6 +2382,30 @@ Screenshots can include:
 * [x] Search by title
 * [x] Search by content
 * [x] Search with pagination
+
+---
+
+## Email Notification System
+
+* [x] SMTP-based email sending
+* [x] Python `smtplib`
+* [x] `.env` SMTP configuration
+* [x] FastAPI BackgroundTasks
+* [x] Modular email service
+* [x] Modular notification service
+* [x] Comment email notifications
+* [x] Like email notifications
+* [x] Post title in email
+* [x] Activity user name in email
+* [x] Activity type in email
+* [x] Timestamp in email
+* [x] Mailtrap testing
+* [x] SMTP authentication error handling
+* [x] Missing configuration handling
+* [x] Background email processing
+* [x] Self-activity notification prevention
+
+---
 
 ## Subscription & Billing
 
@@ -1767,6 +2429,8 @@ Screenshots can include:
 * [x] Invoice path stored in database
 * [x] Current-user billing history API
 
+---
+
 ## Django Admin
 
 * [x] Django Admin setup
@@ -1780,6 +2444,82 @@ Screenshots can include:
 
 ---
 
+# 🔄 Overall Application Flow
+
+```text
+                    USER
+                      |
+          +-----------+-----------+
+          |                       |
+       Register                  Login
+          |                       |
+          +-----------+-----------+
+                      |
+                 JWT Token
+                      |
+          +-----------+-----------+
+          |           |           |
+        Posts      Comments     Likes
+          |           |           |
+      Image Upload    |           |
+          |           |           |
+      Search/Paging   |           |
+          |           |           |
+          +-----------+-----------+
+                      |
+              Subscription Check
+                      |
+          +-----------+-----------+
+          |           |           |
+        Basic      Premium       Pro
+          |           |           |
+        Limits       Limits     Unlimited
+                      |
+              Comment / Like
+                      |
+              BackgroundTasks
+                      |
+          notification_service.py
+                      |
+              email_service.py
+                      |
+                    SMTP
+                      |
+               Mailtrap / Gmail
+```
+
+---
+
+# 🧠 Main Concepts Demonstrated
+
+This project demonstrates:
+
+* REST API development
+* FastAPI routing
+* Dependency Injection
+* SQLAlchemy ORM
+* Database relationships
+* JWT authentication
+* Authorization
+* Ownership validation
+* Pydantic validation
+* File uploads
+* Static file serving
+* UUID-based filenames
+* Search
+* Pagination
+* Subscription-based access control
+* Billing history
+* Invoice generation
+* Django Admin
+* SMTP email communication
+* Background task processing
+* Modular service architecture
+* Error handling
+* API testing with Swagger
+
+---
+
 # 👨‍💻 Author
 
 **Ramkumar S**
@@ -1790,7 +2530,7 @@ B.Tech Computer Science and Engineering
 
 # 📌 Conclusion
 
-The Blog Management API provides a complete backend blogging system using FastAPI.
+The **Blog Management API** provides a complete backend blogging system using FastAPI.
 
 It includes:
 
@@ -1804,16 +2544,23 @@ It includes:
 * Search
 * Comments
 * Likes
+* Unlike functionality
+* Duplicate like validation
 * Ownership authorization
 * Pydantic validation
 * Email notifications
+* SMTP email integration
+* Mailtrap email testing
+* Background email processing
+* Modular email and notification services
 * Swagger API documentation
 * Subscription-based access control
 * Basic, Premium, and Pro plans
-* Post, comment, and like limits
+* Post, comment, image, and like limits
 * Subscription upgrade functionality
 * Billing history
 * Fake invoice PDF generation
+* ReportLab invoice generation
 * Django Admin subscription management
 
-The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, and administrative management.
+The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, administrative management, and asynchronous email notification processing.
