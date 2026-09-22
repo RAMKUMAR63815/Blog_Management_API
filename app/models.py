@@ -247,6 +247,8 @@ class Post(Base):
         default=datetime.utcnow,
         nullable=False
     )
+        # Number of times this post was viewed
+    views = Column(Integer, default=0, nullable=False)
 
     # Post -> User
     author = relationship(

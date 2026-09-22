@@ -162,6 +162,24 @@ def get_post(
             detail="Post not found"
         )
 
+   
+   # =====================================================
+    # POST VIEW TRACKING
+    # =====================================================
+
+    # Someone opened this post.
+    # So increase view count by 1.
+    post.views += 1
+
+
+    # Save updated views value into database.
+    db.commit()
+
+
+    # Refresh object with latest database value.
+    db.refresh(post)
+
+
     return post
 
 

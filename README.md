@@ -1,6 +1,6 @@
 # Blog Management API
 
-A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Subscription-Based Access Control, Billing, Invoice Generation, and Django Admin**.
+A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Subscription-Based Access Control, Billing, Invoice Generation, Django Admin, User Dashboard, Analytics, and Chart.js**.
 
 ---
 
@@ -26,6 +26,10 @@ This project is a mini blogging system where authenticated users can:
 * Upgrade their subscription
 * Generate subscription invoices
 * View billing history
+* View a personalized user dashboard
+* View personal activity statistics
+* View likes and comments analytics per post
+* Visualize post analytics using Chart.js
 
 The API also provides **Swagger documentation** for easy API testing.
 
@@ -145,21 +149,37 @@ Each subscription plan has different limits for posts, images, comments, and lik
 
 ```text
 User
+
   ↓
+
 Select Subscription Plan
+
   ↓
+
 Upgrade API
+
   ↓
+
 Check selected plan
+
   ↓
+
 Create transaction ID
+
   ↓
+
 Generate invoice PDF
+
   ↓
+
 Create billing history
+
   ↓
+
 Update user's subscription plan
+
   ↓
+
 Return subscription details
 ```
 
@@ -177,11 +197,17 @@ Example:
 
 ```text
 Basic Plan
+
 Maximum posts = 1
+
 Existing posts = 1
+
         ↓
+
 Limit reached
+
         ↓
+
 New post rejected
 ```
 
@@ -207,11 +233,17 @@ Example:
 
 ```text
 Basic Plan
+
 Maximum comments = 10
+
 Existing comments = 10
+
         ↓
+
 Limit reached
+
         ↓
+
 New comment rejected
 ```
 
@@ -229,11 +261,17 @@ Example:
 
 ```text
 Basic Plan
+
 Maximum likes = 10
+
 Existing likes = 10
+
         ↓
+
 Limit reached
+
         ↓
+
 New like rejected
 ```
 
@@ -253,15 +291,23 @@ Example:
 
 ```text
 User 1
+
    ↓
+
 Likes Post 1
+
    ↓
+
 Like created
 
 User 1
+
    ↓
+
 Likes Post 1 again
+
    ↓
+
 Rejected
 ```
 
@@ -478,18 +524,23 @@ Hello,
 Ramkumar has commented on your blog post.
 
 Post Title:
+
 Introduction to FastAPI
 
 Comment:
+
 Great blog post!
 
 Activity Type:
+
 Comment
 
 Timestamp:
+
 2026-09-21 10:30 AM
 
 Thank you,
+
 Blog Management API
 ```
 
@@ -516,15 +567,19 @@ Hello,
 Arun liked your blog post.
 
 Post Title:
+
 Introduction to FastAPI
 
 Activity Type:
+
 Like
 
 Timestamp:
+
 2026-09-21 10:35 AM
 
 Thank you,
+
 Blog Management API
 ```
 
@@ -538,15 +593,25 @@ The email system follows a modular structure:
 
 ```text
 Comment / Like Endpoint
+
         ↓
+
 FastAPI BackgroundTasks
+
         ↓
+
 notification_service.py
+
         ↓
+
 email_service.py
+
         ↓
+
 SMTP
+
         ↓
+
 Mailtrap / Gmail
 ```
 
@@ -645,17 +710,29 @@ Without background processing:
 
 ```text
 User
- ↓
+
+↓
+
 Like Post
- ↓
+
+↓
+
 Save Like
- ↓
+
+↓
+
 Connect SMTP
- ↓
+
+↓
+
 Login SMTP
- ↓
+
+↓
+
 Send Email
- ↓
+
+↓
+
 Return API Response
 ```
 
@@ -665,19 +742,33 @@ With `BackgroundTasks`:
 
 ```text
 User
- ↓
+
+↓
+
 Like Post
- ↓
+
+↓
+
 Save Like
- ↓
+
+↓
+
 Schedule Email
- ↓
+
+↓
+
 Return API Response
- ↓
+
+↓
+
 Background Task
- ↓
+
+↓
+
 SMTP
- ↓
+
+↓
+
 Send Email
 ```
 
@@ -705,7 +796,9 @@ Example:
 
 ```text
 EMAIL CONFIGURATION ERROR
+
 EMAIL_USERNAME or EMAIL_PASSWORD is missing.
+
 Please check your .env file.
 ```
 
@@ -726,7 +819,6 @@ Example `.env`:
 ```env
 SMTP_SERVER=sandbox.smtp.mailtrap.io
 SMTP_PORT=2525
-
 EMAIL_USERNAME=YOUR_MAILTRAP_USERNAME
 EMAIL_PASSWORD=YOUR_MAILTRAP_PASSWORD
 ```
@@ -803,9 +895,13 @@ Check:
 
 ```text
 Post Title
+
 Commenter Name
+
 Activity Type
+
 Comment
+
 Timestamp
 ```
 
@@ -826,10 +922,558 @@ Check:
 
 ```text
 Post Title
+
 Liker Name
+
 Activity Type
+
 Timestamp
 ```
+
+---
+
+# 📊 User Dashboard & Analytics
+
+The application includes a personalized **User Dashboard** that displays statistics and analytics for the currently authenticated user.
+
+The dashboard was added to provide personalized insights into user activity.
+
+The dashboard uses:
+
+* FastAPI
+* JWT Authentication
+* SQLAlchemy aggregation queries
+* Django Templates
+* JavaScript
+* Chart.js
+* Separate CSS styling
+
+---
+
+# 🎯 Dashboard Goal
+
+The User Dashboard displays personal activity statistics in an interactive and visual format.
+
+The dashboard provides:
+
+* Total posts created
+* Total comments made
+* Total likes received on the user's posts
+* Likes per post
+* Comments per post
+
+Post views are not tracked in the current implementation because post-view tracking is optional in the dashboard requirement.
+
+---
+
+# 📌 Dashboard Overview
+
+The dashboard displays three main statistics cards:
+
+```text
++-------------------+-------------------+-------------------+
+|   Total Posts     |  Comments Made    |  Likes Received  |
+|        3          |         0         |         1         |
++-------------------+-------------------+-------------------+
+```
+
+The values are loaded dynamically from the FastAPI dashboard API.
+
+---
+
+# 🔐 Dashboard User-Specific Security
+
+The dashboard uses JWT authentication.
+
+The authenticated user is obtained using:
+
+```python
+current_user = Depends(get_current_user)
+```
+
+The dashboard queries use the current user's ID.
+
+Example:
+
+```python
+db.query(Post).filter(
+    Post.author_id == current_user.id
+).count()
+```
+
+This ensures that one user cannot request another user's dashboard data through the protected dashboard API.
+
+---
+
+# 📊 Dashboard Statistics API
+
+The dashboard API endpoint is:
+
+```http
+GET /dashboard/
+```
+
+Authentication is required.
+
+The endpoint returns statistics for the currently authenticated user.
+
+Example:
+
+```json
+{
+  "total_posts": 3,
+  "total_comments": 0,
+  "total_likes_received": 1,
+  "likes_per_post": [
+    {
+      "title": "good title",
+      "likes": 1
+    },
+    {
+      "title": "Thor",
+      "likes": 0
+    },
+    {
+      "title": "Nature",
+      "likes": 0
+    }
+  ],
+  "comments_per_post": [
+    {
+      "title": "good title",
+      "comments": 4
+    },
+    {
+      "title": "Thor",
+      "comments": 0
+    },
+    {
+      "title": "Nature",
+      "comments": 0
+    }
+  ]
+}
+```
+
+---
+
+# 📈 Dashboard Chart Data API
+
+A separate API endpoint is used for Chart.js:
+
+```http
+GET /dashboard/chart-data
+```
+
+Authentication is required.
+
+Example response:
+
+```json
+{
+  "likes": [
+    {
+      "title": "good title",
+      "count": 1
+    },
+    {
+      "title": "Thor",
+      "count": 0
+    },
+    {
+      "title": "Nature",
+      "count": 0
+    }
+  ],
+  "comments": [
+    {
+      "title": "good title",
+      "count": 4
+    },
+    {
+      "title": "Thor",
+      "count": 0
+    },
+    {
+      "title": "Nature",
+      "count": 0
+    }
+  ]
+}
+```
+
+The API data is dynamically loaded by the Django dashboard using JavaScript `fetch()`.
+
+---
+
+# 📊 Dashboard Data Aggregation
+
+The dashboard uses SQLAlchemy aggregation queries.
+
+Total posts:
+
+```python
+db.query(Post).filter(
+    Post.author_id == current_user.id
+).count()
+```
+
+Total comments made:
+
+```python
+db.query(Comment).filter(
+    Comment.user_id == current_user.id
+).count()
+```
+
+Total likes received:
+
+```python
+db.query(Like)
+.join(Post, Like.post_id == Post.id)
+.filter(Post.author_id == current_user.id)
+.count()
+```
+
+Likes per post use:
+
+```text
+Post
+ ↓
+Like
+ ↓
+COUNT(Like.id)
+ ↓
+GROUP BY Post
+```
+
+Comments per post use:
+
+```text
+Post
+ ↓
+Comment
+ ↓
+COUNT(Comment.id)
+ ↓
+GROUP BY Post
+```
+
+This allows the API to return aggregated data instead of loading every individual record into the application.
+
+---
+
+# 📊 Dashboard Visualization
+
+The dashboard uses **Chart.js**.
+
+A bar chart displays:
+
+```text
+Post
+ │
+ ├── Likes
+ │
+ └── Comments
+```
+
+Example:
+
+```text
+Likes / Comments
+
+Count
+  5 |
+  4 |       █
+  3 |       █
+  2 |       █
+  1 | █     █
+  0 | █  █  █
+    +----------------
+      Post1 Post2 Post3
+```
+
+The chart is dynamically generated using data received from:
+
+```http
+GET /dashboard/chart-data
+```
+
+---
+
+# 🖥️ Django Dashboard UI
+
+The dashboard UI is implemented using Django templates.
+
+Dashboard template:
+
+```text
+django_admin/subscriptions/templates/subscriptions/dashboard.html
+```
+
+Dashboard CSS:
+
+```text
+django_admin/subscriptions/static/subscriptions/dashboard.css
+```
+
+The Django page uses JavaScript to communicate with the FastAPI backend.
+
+Architecture:
+
+```text
+Browser
+
+   ↓
+
+Django Dashboard Template
+
+   ↓
+
+JavaScript fetch()
+
+   ↓
+
+FastAPI Dashboard API
+
+   ↓
+
+JWT Authentication
+
+   ↓
+
+SQLite Database
+
+   ↓
+
+Aggregated Dashboard Data
+
+   ↓
+
+Chart.js
+```
+
+---
+
+# 🎨 Dashboard CSS
+
+The dashboard styling is separated into:
+
+```text
+dashboard.css
+```
+
+The CSS provides:
+
+* Dashboard layout
+* Statistics cards
+* Responsive layout
+* Analytics section
+* Chart container
+* Chart border
+* Centered chart
+* Mobile responsiveness
+
+The chart is displayed inside a separate bordered box.
+
+The outer analytics section contains:
+
+```text
+Post Analytics
+```
+
+and the inner chart box contains the Chart.js visualization.
+
+---
+
+# 🔑 Dashboard JWT Flow
+
+The dashboard uses the JWT access token returned during login.
+
+The token is stored in browser local storage for the current development/demo setup.
+
+Example:
+
+```javascript
+localStorage.setItem(
+    "access_token",
+    "YOUR_ACCESS_TOKEN"
+);
+```
+
+The dashboard retrieves the token:
+
+```javascript
+const token =
+    localStorage.getItem("access_token");
+```
+
+The token is sent to FastAPI:
+
+```javascript
+headers: {
+    "Authorization":
+        "Bearer " + token
+}
+```
+
+FastAPI validates the token before returning dashboard data.
+
+---
+
+# 🧪 Testing Dashboard
+
+## Step 1 — Login
+
+Use:
+
+```http
+POST /auth/login
+```
+
+Copy the returned access token.
+
+---
+
+## Step 2 — Store Token
+
+In the browser console:
+
+```javascript
+localStorage.setItem(
+    "access_token",
+    "YOUR_ACCESS_TOKEN"
+);
+```
+
+Check:
+
+```javascript
+localStorage.getItem("access_token");
+```
+
+The JWT token should be returned.
+
+---
+
+## Step 3 — Test Dashboard API
+
+Open Swagger:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+Authorize using the JWT token.
+
+Test:
+
+```http
+GET /dashboard/
+```
+
+Verify:
+
+```text
+Total Posts
+
+Total Comments Made
+
+Total Likes Received
+
+Likes Per Post
+
+Comments Per Post
+```
+
+---
+
+## Step 4 — Test Chart API
+
+Test:
+
+```http
+GET /dashboard/chart-data
+```
+
+Verify:
+
+```text
+Likes
+
+Comments
+
+Post Titles
+```
+
+---
+
+## Step 5 — Open Django Dashboard
+
+Run Django:
+
+```powershell
+cd django_admin
+
+python manage.py runserver 8001
+```
+
+Open:
+
+```text
+http://127.0.0.1:8001/dashboard/
+```
+
+The dashboard should display:
+
+```text
+User Dashboard
+
+Total Posts
+Comments Made
+Likes Received
+
+Post Analytics
+
+Likes / Comments Chart
+```
+
+---
+
+# 🧪 Dashboard User-Specific Testing
+
+Create posts using different users.
+
+For example:
+
+```text
+User 1
+
+Post A
+Post B
+
+User 2
+
+Post C
+```
+
+Login as User 1.
+
+The dashboard should show only User 1's:
+
+```text
+Posts
+
+Comments Made
+
+Likes Received
+
+Post Analytics
+```
+
+User 1 should not receive User 2's dashboard data.
+
+JWT authentication and `current_user.id` filtering are used to achieve this.
 
 ---
 
@@ -864,9 +1508,13 @@ Stores registered users.
 
 ```text
 id
+
 username
+
 email
+
 password
+
 subscription_plan_id
 ```
 
@@ -878,9 +1526,13 @@ Relationship:
 
 ```text
 users
+
   |
+
   | subscription_plan_id
+
   ↓
+
 subscription_plans.id
 ```
 
@@ -892,10 +1544,15 @@ Stores blog posts.
 
 ```text
 id
+
 title
+
 content
+
 image
+
 author_id
+
 created_at
 ```
 
@@ -905,10 +1562,15 @@ Relationship:
 
 ```text
 users.id
+
     ↑
+
     |
+
 author_id
+
     |
+
 posts
 ```
 
@@ -920,9 +1582,13 @@ Stores comments made on blog posts.
 
 ```text
 id
+
 post_id
+
 user_id
+
 text
+
 created_at
 ```
 
@@ -930,13 +1596,20 @@ Relationships:
 
 ```text
 posts.id
+
    ↑
+
    |
+
 post_id
 
+
 users.id
+
    ↑
+
    |
+
 user_id
 ```
 
@@ -948,7 +1621,9 @@ Stores likes given to posts.
 
 ```text
 id
+
 post_id
+
 user_id
 ```
 
@@ -956,13 +1631,20 @@ Relationships:
 
 ```text
 posts.id
+
    ↑
+
    |
+
 post_id
 
+
 users.id
+
    ↑
+
    |
+
 user_id
 ```
 
@@ -976,12 +1658,19 @@ Stores subscription plan configuration.
 
 ```text
 id
+
 name
+
 price
+
 max_posts
+
 max_images
+
 max_comments
+
 max_likes
+
 is_active
 ```
 
@@ -989,7 +1678,9 @@ Example:
 
 ```text
 Basic
+
 Premium
+
 Pro
 ```
 
@@ -1001,13 +1692,21 @@ Stores subscription billing information.
 
 ```text
 id
+
 user_id
+
 plan_id
+
 amount
+
 transaction_id
+
 invoice_path
+
 start_date
+
 end_date
+
 created_at
 ```
 
@@ -1080,7 +1779,9 @@ because it supports both text fields and an image file.
 
 ```text
 title
+
 content
+
 image
 ```
 
@@ -1094,17 +1795,29 @@ Before creating the post, the API checks the user's subscription post limit.
 
 ```text
 User selects image
+
         ↓
+
 UploadFile receives image
+
         ↓
+
 Unique filename is generated
+
         ↓
+
 Image is saved to media/posts/
+
         ↓
+
 Image path is stored in database
+
         ↓
+
 API returns image path
+
         ↓
+
 StaticFiles serves the image
 ```
 
@@ -1132,6 +1845,7 @@ Default values:
 
 ```text
 page = 1
+
 limit = 10
 ```
 
@@ -1161,6 +1875,7 @@ Search checks:
 
 ```text
 Post title
+
 Post content
 ```
 
@@ -1174,6 +1889,7 @@ The API supports:
 
 ```text
 page
+
 limit
 ```
 
@@ -1193,7 +1909,9 @@ Example:
 
 ```text
 Page 1 → skip 0
+
 Page 2 → skip 10
+
 Page 3 → skip 20
 ```
 
@@ -1201,9 +1919,13 @@ The API returns:
 
 ```text
 page
+
 limit
+
 total_count
+
 total_pages
+
 posts
 ```
 
@@ -1261,7 +1983,9 @@ The update API supports:
 
 ```text
 title
+
 content
+
 image
 ```
 
@@ -1311,15 +2035,25 @@ After the comment is successfully created:
 
 ```text
 Comment Created
+
       ↓
+
 Check Post Owner
+
       ↓
+
 If commenter != post owner
+
       ↓
+
 BackgroundTasks
+
       ↓
+
 Notification Service
+
       ↓
+
 Email Service
 ```
 
@@ -1355,15 +2089,25 @@ After the like is successfully created:
 
 ```text
 Like Created
+
      ↓
+
 Check Post Owner
+
      ↓
+
 If liker != post owner
+
      ↓
+
 BackgroundTasks
+
      ↓
+
 Notification Service
+
      ↓
+
 Email Service
 ```
 
@@ -1398,6 +2142,40 @@ Example response:
 
 ---
 
+# 📊 Dashboard APIs
+
+The dashboard provides two protected endpoints.
+
+## User Dashboard
+
+```http
+GET /dashboard/
+```
+
+Returns:
+
+* Total posts
+* Total comments made
+* Total likes received
+* Likes per post
+* Comments per post
+
+## Chart Data
+
+```http
+GET /dashboard/chart-data
+```
+
+Returns:
+
+* Post titles
+* Likes per post
+* Comments per post
+
+Both endpoints require JWT authentication.
+
+---
+
 # ✅ Validation
 
 Pydantic is used for request validation.
@@ -1423,6 +2201,7 @@ Example:
 
 ```text
 User 1 → Post 1
+
 User 2 → Post 2
 ```
 
@@ -1430,6 +2209,7 @@ User 1 can:
 
 ```text
 Update Post 1
+
 Delete Post 1
 ```
 
@@ -1437,6 +2217,7 @@ User 1 cannot:
 
 ```text
 Update Post 2
+
 Delete Post 2
 ```
 
@@ -1462,9 +2243,13 @@ Example:
 
 ```text
 media/
+
 └── posts/
+
     ├── 6d33702627e6455aabb19bfffe5731df_images.jpg
+
     ├── 5d49371ae12244758dc02e8e238a08db_images.jpg
+
     └── another_image.jpg
 ```
 
@@ -1484,9 +2269,13 @@ Example:
 
 ```text
 media/
+
 ├── posts/
+
 │   └── uploaded images
+
 └── invoices/
+
     └── invoice_TXN_ABC123.pdf
 ```
 
@@ -1511,6 +2300,9 @@ media/
 * StaticFiles
 * ReportLab
 * Django Admin
+* Django Templates
+* JavaScript
+* Chart.js
 
 ---
 
@@ -1518,70 +2310,154 @@ media/
 
 ```text
 Blog_Management_API/
+
 │
+
 ├── .env
+
 ├── .gitignore
+
 ├── blog.db
+
 ├── requirements.txt
+
 ├── README.md
+
 ├── seed_plans.py
+
 ├── assign_basic_plan.py
+
 │
+
 ├── media/
+
 │   ├── posts/
+
 │   │   └── uploaded images
+
 │   │
+
 │   └── invoices/
+
 │       └── generated invoices
+
 │
+
 ├── Screenshots/
+
 │
+
 ├── app/
+
 │   │
+
 │   ├── __init__.py
+
 │   ├── main.py
+
 │   ├── database.py
+
 │   ├── models.py
+
 │   ├── schemas.py
+
 │   ├── auth.py
+
 │   ├── dependencies.py
+
 │   │
+
 │   ├── services/
+
 │   │   ├── __init__.py
+
 │   │   ├── email_service.py
+
 │   │   └── notification_service.py
+
 │   │
+
 │   ├── utils/
+
 │   │   ├── __init__.py
+
 │   │   └── subscription.py
+
 │   │
+
 │   └── routers/
+
 │       ├── __init__.py
+
 │       ├── auth.py
+
 │       ├── post.py
+
 │       ├── comment.py
+
 │       ├── like.py
-│       └── subscription.py
+
+│       ├── subscription.py
+
+│       └── dashboard.py
+
 │
+
 └── django_admin/
+
     │
+
     ├── manage.py
+
     │
+
     ├── django_admin/
+
     │   ├── __init__.py
+
     │   ├── settings.py
+
     │   ├── urls.py
+
     │   ├── asgi.py
+
     │   └── wsgi.py
+
     │
+
     └── subscriptions/
+
         ├── __init__.py
+
         ├── admin.py
+
         ├── apps.py
+
         ├── models.py
+
         ├── migrations/
+
         ├── tests.py
-        └── views.py
+
+        ├── views.py
+
+        ├── urls.py
+
+        │
+
+        ├── static/
+
+        │   └── subscriptions/
+
+        │       └── dashboard.css
+
+        │
+
+        └── templates/
+
+            └── subscriptions/
+
+                └── dashboard.html
 ```
 
 ---
@@ -1594,15 +2470,25 @@ Responsible for actual email delivery.
 
 ```text
 SMTP configuration
+
        ↓
+
 Create email
+
        ↓
+
 Connect SMTP
+
        ↓
+
 TLS
+
        ↓
+
 Login
+
        ↓
+
 Send email
 ```
 
@@ -1614,9 +2500,13 @@ Responsible for creating activity notifications.
 
 ```text
 Comment activity
+
        ↓
+
 Create comment email
+
        ↓
+
 Call email_service
 ```
 
@@ -1624,9 +2514,13 @@ and:
 
 ```text
 Like activity
+
        ↓
+
 Create like email
+
        ↓
+
 Call email_service
 ```
 
@@ -1640,8 +2534,90 @@ It checks:
 
 ```text
 Post limits
+
 Comment limits
+
 Like limits
+```
+
+---
+
+## dashboard.py
+
+Responsible for personalized dashboard analytics.
+
+It provides:
+
+```text
+Dashboard statistics
+
+       ↓
+
+Current authenticated user
+
+       ↓
+
+Database aggregation
+
+       ↓
+
+Likes/comments per post
+
+       ↓
+
+JSON response
+```
+
+---
+
+## dashboard.html
+
+Responsible for the Django dashboard interface.
+
+It displays:
+
+```text
+Dashboard heading
+
+       ↓
+
+Statistics cards
+
+       ↓
+
+Post Analytics
+
+       ↓
+
+Chart.js visualization
+```
+
+---
+
+## dashboard.css
+
+Responsible for dashboard styling.
+
+It controls:
+
+```text
+Dashboard layout
+
+       ↓
+
+Statistics cards
+
+       ↓
+
+Analytics section
+
+       ↓
+
+Chart box
+
+       ↓
+
+Responsive design
 ```
 
 ---
@@ -1726,7 +2702,9 @@ This creates:
 
 ```text
 Basic
+
 Premium
+
 Pro
 ```
 
@@ -1786,6 +2764,8 @@ Swagger can be used to test:
 * Subscription plans
 * Subscription upgrade
 * Billing history
+* User dashboard
+* Dashboard chart data
 
 ---
 
@@ -1797,6 +2777,7 @@ Run Django from the `django_admin` folder:
 
 ```powershell
 cd django_admin
+
 python manage.py runserver 8001
 ```
 
@@ -1832,11 +2813,46 @@ Subscription plans are ordered:
 
 ```text
 1 → Basic
+
 2 → Premium
+
 3 → Pro
 ```
 
 Billing history is ordered with the newest billing record first.
+
+---
+
+# 🖥️ Django User Dashboard
+
+The Django application also provides a dashboard page.
+
+Run Django:
+
+```powershell
+cd django_admin
+
+python manage.py runserver 8001
+```
+
+Open:
+
+```text
+http://127.0.0.1:8001/dashboard/
+```
+
+The dashboard communicates with the FastAPI backend.
+
+The Django dashboard provides:
+
+* Total Posts
+* Comments Made
+* Likes Received
+* Post Analytics
+* Likes per Post
+* Comments per Post
+* Responsive dashboard layout
+* Chart.js visualization
 
 ---
 
@@ -1884,7 +2900,9 @@ Verify:
 
 ```text
 Basic
+
 Premium
+
 Pro
 ```
 
@@ -1900,7 +2918,9 @@ Use:
 
 ```text
 title
+
 content
+
 image
 ```
 
@@ -1918,7 +2938,9 @@ Test:
 
 ```text
 Comment creation
+
 Comment subscription limit
+
 Comment email notification
 ```
 
@@ -1932,9 +2954,13 @@ Open Mailtrap and verify:
 
 ```text
 Post Title
+
 Commenter Name
+
 Activity Type
+
 Comment
+
 Timestamp
 ```
 
@@ -1963,8 +2989,11 @@ Open Mailtrap and verify:
 
 ```text
 Post Title
+
 Liker Name
+
 Activity Type
+
 Timestamp
 ```
 
@@ -2027,7 +3056,9 @@ Verify that Premium allows:
 
 ```text
 2 posts
+
 50 comments
+
 50 likes
 ```
 
@@ -2045,7 +3076,9 @@ Verify that Pro has unlimited:
 
 ```text
 Posts
+
 Comments
+
 Likes
 ```
 
@@ -2087,9 +3120,13 @@ Verify:
 
 ```text
 page
+
 limit
+
 total_count
+
 total_pages
+
 posts
 ```
 
@@ -2135,6 +3172,100 @@ DELETE /posts/{post_id}
 
 ---
 
+## Step 22 — Test User Dashboard
+
+Login and obtain a JWT token.
+
+Then test:
+
+```http
+GET /dashboard/
+```
+
+Verify:
+
+```text
+Total posts
+
+Total comments made
+
+Total likes received
+
+Likes per post
+
+Comments per post
+```
+
+---
+
+## Step 23 — Test Dashboard Chart Data
+
+Test:
+
+```http
+GET /dashboard/chart-data
+```
+
+Verify:
+
+```text
+Post titles
+
+Likes count
+
+Comments count
+```
+
+---
+
+## Step 24 — Open Django Dashboard
+
+Run:
+
+```powershell
+cd django_admin
+
+python manage.py runserver 8001
+```
+
+Open:
+
+```text
+http://127.0.0.1:8001/dashboard/
+```
+
+Verify:
+
+```text
+User Dashboard
+
+Total Posts
+
+Comments Made
+
+Likes Received
+
+Post Analytics
+
+Chart
+```
+
+---
+
+## Step 25 — Test Dashboard User Isolation
+
+Login as User 1.
+
+Open the dashboard and verify User 1's data.
+
+Login as User 2.
+
+Open the dashboard and verify User 2's data.
+
+Each user's dashboard should contain only their own statistics.
+
+---
+
 # 🗃️ SQLite Verification
 
 The SQLite database can be opened using **DB Browser for SQLite**.
@@ -2149,10 +3280,15 @@ The following tables can be checked:
 
 ```text
 users
+
 posts
+
 comments
+
 likes
+
 subscription_plans
+
 billing_history
 ```
 
@@ -2232,6 +3368,22 @@ Screenshots can include:
 * Subscription Plans
 * Upgrade Subscription
 * Billing History
+* User Dashboard
+* Dashboard Chart Data
+
+---
+
+# 📊 Dashboard Screenshots
+
+Screenshots should include:
+
+* Django User Dashboard
+* Total Posts card
+* Comments Made card
+* Likes Received card
+* Post Analytics section
+* Likes/Comments Chart
+* Responsive dashboard layout
 
 ---
 
@@ -2245,9 +3397,13 @@ Show the Mailtrap captured email containing:
 
 ```text
 Post Title
+
 Commenter Name
+
 Activity Type: Comment
+
 Comment
+
 Timestamp
 ```
 
@@ -2257,8 +3413,11 @@ Show the Mailtrap captured email containing:
 
 ```text
 Post Title
+
 Liker Name
+
 Activity Type: Like
+
 Timestamp
 ```
 
@@ -2307,6 +3466,21 @@ Screenshots can include:
 * Transaction ID
 * Invoice path
 * Subscription dates
+
+---
+
+# 🖥️ Django Dashboard Screenshots
+
+Screenshots can include:
+
+* User Dashboard
+* Total Posts
+* Comments Made
+* Likes Received
+* Post Analytics
+* Chart.js bar chart
+* Likes per post
+* Comments per post
 
 ---
 
@@ -2444,48 +3618,160 @@ Do not include SMTP usernames/passwords or other private credentials in screensh
 
 ---
 
+## User Dashboard & Analytics
+
+* [x] User Dashboard
+* [x] Dashboard FastAPI router
+* [x] JWT-protected dashboard API
+* [x] Current-user dashboard filtering
+* [x] Total posts statistic
+* [x] Total comments made statistic
+* [x] Total likes received statistic
+* [x] Likes per post aggregation
+* [x] Comments per post aggregation
+* [x] Dashboard chart-data API
+* [x] Dynamic API data loading
+* [x] Django dashboard template
+* [x] Separate dashboard CSS
+* [x] Responsive dashboard layout
+* [x] Chart.js integration
+* [x] Bar chart visualization
+* [x] Likes visualization
+* [x] Comments visualization
+* [x] User-specific dashboard data
+* [x] Dashboard API testing
+
+---
+
 # 🔄 Overall Application Flow
 
 ```text
                     USER
+
                       |
+
           +-----------+-----------+
+
           |                       |
+
        Register                  Login
+
           |                       |
+
           +-----------+-----------+
+
                       |
+
                  JWT Token
+
                       |
+
           +-----------+-----------+
+
           |           |           |
-        Posts      Comments     Likes
+
+        Posts      Comments      Likes
+
           |           |           |
+
       Image Upload    |           |
+
           |           |           |
-      Search/Paging   |           |
+
+     Search/Paging    |           |
+
           |           |           |
+
           +-----------+-----------+
+
                       |
+
               Subscription Check
+
                       |
+
           +-----------+-----------+
+
           |           |           |
+
         Basic      Premium       Pro
+
           |           |           |
-        Limits       Limits     Unlimited
+
+        Limits       Limits    Unlimited
+
                       |
+
               Comment / Like
+
                       |
+
               BackgroundTasks
+
                       |
+
           notification_service.py
+
                       |
+
               email_service.py
+
                       |
+
                     SMTP
+
                       |
+
                Mailtrap / Gmail
+
+
+                      +
+
+                      |
+
+              User Dashboard
+
+                      |
+
+                 JWT Token
+
+                      |
+
+             Dashboard API
+
+                      |
+
+            Current User Filter
+
+                      |
+
+            Database Aggregation
+
+                      |
+
+          +-----------+-----------+
+
+          |                       |
+
+     Dashboard Stats        Chart Data
+
+          |                       |
+
+          +-----------+-----------+
+
+                      |
+
+                  Django
+
+                 Dashboard
+
+                      |
+
+                 Chart.js
+
+                      |
+
+              Post Analytics
 ```
 
 ---
@@ -2512,11 +3798,21 @@ This project demonstrates:
 * Billing history
 * Invoice generation
 * Django Admin
+* Django Templates
 * SMTP email communication
 * Background task processing
 * Modular service architecture
 * Error handling
 * API testing with Swagger
+* Data aggregation
+* SQL `COUNT`
+* SQL `JOIN`
+* SQL `GROUP BY`
+* User-specific analytics
+* Dashboard development
+* Chart.js data visualization
+* Dynamic API-driven charts
+* Responsive UI design
 
 ---
 
@@ -2562,5 +3858,13 @@ It includes:
 * Fake invoice PDF generation
 * ReportLab invoice generation
 * Django Admin subscription management
+* Personalized User Dashboard
+* JWT-protected dashboard APIs
+* User-specific activity statistics
+* Likes and comments analytics
+* SQLAlchemy data aggregation
+* Chart.js visualization
+* Dynamic API-driven charts
+* Responsive Django dashboard UI
 
-The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, administrative management, and asynchronous email notification processing.
+The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, administrative management, asynchronous email notification processing, personalized analytics, data aggregation, and interactive dashboard visualization.
