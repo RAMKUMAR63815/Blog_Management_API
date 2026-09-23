@@ -37,21 +37,36 @@ def get_notifications(
 def mark_read(
     notification_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user)
 ):
+    # Find the notification
+    # AND make sure it belongs to the logged-in user
     notification = (
         db.query(Notification)
         .filter(
-            Notification.id ==
-            notification_id,
-            Notification.user_id ==
-            current_user.id
+            Notification.id == notification_id,#and
+            Notification.user_id == current_user.id
         )
         .first()
     )
 
+    # If notification does not exist
+    # or belongs to another user
+    if notification is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Notification not found"
+        )
+        # Already read
+    if notification.is_read:
+        return {
+            "message": "Notification already read"
+        }
+
+    # Change unread -> read
     notification.is_read = True
 
+    # Save change to database
     db.commit()
 
     return {
