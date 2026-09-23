@@ -9,6 +9,7 @@ from reportlab.pdfgen import canvas  #Think of canvas as a blank drawing board f
 from ..database import get_db
 from ..models import User, SubscriptionPlan, BillingHistory
 from ..dependencies import get_current_user
+from ..models import Notification
 
 
 router = APIRouter(
@@ -162,6 +163,15 @@ def upgrade_subscription(
 
     db.commit()
     db.refresh(billing)
+    
+    notification = Notification(
+    user_id=current_user.id,
+    message="Your subscription has been activated",
+    notification_type="subscription"
+)
+
+    db.add(notification)
+    db.commit()
 
     return {
         "message": f"Successfully upgraded to {plan.name} plan.",

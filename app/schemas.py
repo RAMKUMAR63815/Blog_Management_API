@@ -121,3 +121,15 @@ class CommentResponse(BaseModel):
 class LikeResponse(BaseModel):
     message: str
     post_id: int
+#===========================================================
+# NOTIFICATION SCHEMA
+#===========================================================
+class NotificationResponse(BaseModel):
+    id: int
+    message: str
+    notification_type: str
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

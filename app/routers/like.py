@@ -4,9 +4,11 @@ from fastapi import (
     HTTPException,
     status,
     BackgroundTasks  # NEW: Runs email notification after API response
+
 )
 
 from sqlalchemy.orm import Session
+from ..models import Notification
 
 from ..database import get_db
 from ..models import Post, Like
@@ -99,6 +101,13 @@ def like_post(
             liker_username=current_user.username,
             post_title=post.title
         )
+    notification = Notification(
+    user_id=post.author_id,
+    message=f"{current_user.username} liked your post",
+    notification_type="like")
+
+    db.add(notification)
+    db.commit()
 
         # IMPORTANT:
         # We are NOT directly calling:

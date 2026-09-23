@@ -7,6 +7,7 @@ from fastapi import (
 )
 
 from sqlalchemy.orm import Session
+from ..models import Notification
 
 from ..database import get_db
 from ..models import Post, Comment
@@ -112,6 +113,14 @@ def add_comment(
             post_title=post.title,
             comment_text=comment_data.text
         )
+    notification = Notification(
+    user_id=post.author_id,
+    message=f"{current_user.username} commented on your post",
+    notification_type="comment"
+)
+
+    db.add(notification)
+    db.commit()
 
         # IMPORTANT:
         # We are not directly calling:

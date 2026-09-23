@@ -79,7 +79,12 @@ class User(Base):
         "BillingHistory",
         back_populates="user",
         cascade="all, delete-orphan"
-    )
+    ) # User -> Notification 
+    notifications = relationship(
+    "Notification",
+    back_populates="user",
+    cascade="all, delete-orphan"
+)
 # =========================================================
 # SUBSCRIPTION PLAN MODEL
 # =========================================================
@@ -365,4 +370,32 @@ class Like(Base):
     user = relationship(
         "User",
         back_populates="likes"
+    )
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id")
+    )
+
+    message = Column(String)
+
+    notification_type = Column(String)
+
+    is_read = Column(
+        Boolean,
+        default=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    user = relationship(
+        "User",
+        back_populates="notifications"
     )

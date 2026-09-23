@@ -14,6 +14,7 @@ from .routers import comment
 from .routers import like
 from app.routers import dashboard
 from .routers.subscription import router as subscription_router
+from app.routers import notifications
 
 # =========================================================
 # CREATE DATABASE TABLES
@@ -93,4 +94,7 @@ app.include_router(subscription_router)
 
 app.include_router(
     dashboard.router
+)
+app.include_router(
+    notifications.router
 )
