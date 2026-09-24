@@ -83,8 +83,15 @@ class User(Base):
     notifications = relationship(
     "Notification",
     back_populates="user",
+    cascade="all, delete-orphan")
+
+    # One user-ku many AI chat records irukkalam.
+    ai_chat_logs = relationship(
+    "AIChatLog",
+    back_populates="user",
     cascade="all, delete-orphan"
 )
+
 # =========================================================
 # SUBSCRIPTION PLAN MODEL
 # =========================================================
@@ -398,4 +405,49 @@ class Notification(Base):
     user = relationship(
         "User",
         back_populates="notifications"
+    )
+    # ============================================================
+# AI SUPPORT CHAT LOG
+# ============================================================
+
+class AIChatLog(Base):
+    
+    # Indha table user AI kitta ketta questions
+    # and AI kudutha answers-ah save pannum.
+    __tablename__ = "ai_chat_logs"
+
+    # Each chat record-ku unique ID.
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    # Chat ketta user-oda ID.
+    # users table-oda id-ku connect aagum.
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    # User AI kitta ketta question.
+    question = Column(
+        String,
+        nullable=False
+    )
+    # AI kudutha answer.
+    response = Column(
+        String,
+        nullable=False
+    )
+    # Question/answer create aana date and time.
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+    # AI chat log belongs to one user.
+    user = relationship(
+        "User",
+        back_populates="ai_chat_logs"
     )

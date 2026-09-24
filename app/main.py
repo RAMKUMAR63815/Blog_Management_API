@@ -15,6 +15,7 @@ from .routers import like
 from app.routers import dashboard
 from .routers.subscription import router as subscription_router
 from app.routers import notifications
+from app.routers import ai_support
 
 # =========================================================
 # CREATE DATABASE TABLES
@@ -97,4 +98,9 @@ app.include_router(
 )
 app.include_router(
     notifications.router
+)
+
+# AI Support router-ah FastAPI application-kulla register pannrom.
+app.include_router(
+    ai_support.router
 )

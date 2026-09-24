@@ -1,6 +1,6 @@
 # Blog Management API
 
-A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Subscription-Based Access Control, Billing, Invoice Generation, Django Admin, User Dashboard, Analytics, and Chart.js**.
+A simple **Blog Management API** built using **FastAPI, SQLite, SQLAlchemy ORM, JWT Authentication, Image Uploads, Pagination, Search, Email Notifications, Notification Center, Subscription-Based Access Control, Billing, Invoice Generation, Django Admin, User Dashboard, Analytics, Chart.js, and AI Support Chat**.
 
 ---
 
@@ -21,6 +21,9 @@ This project is a mini blogging system where authenticated users can:
 * View comments
 * Like and unlike posts
 * Receive email notifications for new comments and likes
+* Receive in-app notifications through the Notification Center
+* Mark notifications as read
+* Mark all notifications as read
 * Subscribe to Basic, Premium, or Pro plans
 * Access features according to their subscription limits
 * Upgrade their subscription
@@ -30,6 +33,7 @@ This project is a mini blogging system where authenticated users can:
 * View personal activity statistics
 * View likes and comments analytics per post
 * Visualize post analytics using Chart.js
+* Use an AI Support Chat for common platform-related questions
 
 The API also provides **Swagger documentation** for easy API testing.
 
@@ -869,8 +873,11 @@ The `.gitignore` file should contain:
 
 ```text
 .env
+
 venv/
+
 __pycache__/
+
 *.pyc
 ```
 
@@ -932,6 +939,1020 @@ Timestamp
 
 ---
 
+# 🔔 Notification Center
+
+The application includes an in-app **Notification Center** that allows authenticated users to view activity notifications without relying only on email notifications.
+
+The Notification Center provides:
+
+* Notification bell
+* Notification dropdown
+* Unread notification count
+* Read and unread notification states
+* Mark individual notification as read
+* Mark all notifications as read
+* User-specific notification access
+* Background notification polling
+* Responsive notification UI
+
+The Notification Center is separate from email notifications.
+
+Email notifications are delivered through SMTP, while the Notification Center stores and displays notifications inside the application.
+
+---
+
+# 🗄️ Notification Database Table
+
+Notifications are stored in:
+
+```text
+notifications
+```
+
+The table contains:
+
+```text
+id
+user_id
+message
+notification_type
+is_read
+created_at
+```
+
+### Notification fields
+
+`id`
+
+Unique notification ID.
+
+`user_id`
+
+Identifies the user who should receive the notification.
+
+`message`
+
+Stores the notification message.
+
+`notification_type`
+
+Identifies the type of notification.
+
+Examples:
+
+```text
+like
+comment
+subscription
+```
+
+`is_read`
+
+Stores whether the notification has been read.
+
+```text
+false → unread
+true  → read
+```
+
+`created_at`
+
+Stores the date and time when the notification was created.
+
+---
+
+# 🔗 Notification User Relationship
+
+Each notification belongs to one user.
+
+The User model contains a relationship to notifications.
+
+Conceptually:
+
+```text
+User
+
+  ↓
+
+One User
+
+  ↓
+
+Many Notifications
+```
+
+A user can therefore have multiple notifications.
+
+When a user is deleted, their related notifications can also be removed through the configured relationship cascade.
+
+---
+
+# 🔔 Notification Triggers
+
+Notifications are created when important activities happen.
+
+## Like Notification
+
+When another user likes a user's post:
+
+```text
+User A creates Post
+
+        ↓
+
+User B likes Post
+
+        ↓
+
+Create Notification
+
+        ↓
+
+Notification belongs to User A
+```
+
+Example:
+
+```text
+Ramkumar liked your post
+```
+
+The post owner does not receive a notification for their own like.
+
+---
+
+## Comment Notification
+
+When another user comments on a user's post:
+
+```text
+User A creates Post
+
+        ↓
+
+User B comments
+
+        ↓
+
+Create Notification
+
+        ↓
+
+Notification belongs to User A
+```
+
+Example:
+
+```text
+Arun commented on your post
+```
+
+The post owner does not receive a notification for their own comment.
+
+---
+
+## Subscription Notification
+
+When a subscription is activated:
+
+```text
+User
+
+ ↓
+
+Subscription Upgrade
+
+ ↓
+
+Subscription Activated
+
+ ↓
+
+Notification Created
+```
+
+Example:
+
+```text
+Your subscription has been activated
+```
+
+---
+
+# 📋 Notification APIs
+
+## Get Notifications
+
+```http
+GET /notifications/
+```
+
+Authentication is required.
+
+The endpoint returns notifications belonging only to the currently authenticated user.
+
+Notifications are ordered with the newest notifications first.
+
+Example response:
+
+```json
+[
+  {
+    "id": 3,
+    "message": "Arun liked your post",
+    "notification_type": "like",
+    "is_read": false,
+    "created_at": "2026-09-23T10:30:00"
+  },
+  {
+    "id": 2,
+    "message": "Ram commented on your post",
+    "notification_type": "comment",
+    "is_read": true,
+    "created_at": "2026-09-23T09:20:00"
+  }
+]
+```
+
+---
+
+# ✅ Mark One Notification as Read
+
+```http
+PUT /notifications/read/{notification_id}
+```
+
+Authentication is required.
+
+The API verifies that the notification belongs to the currently authenticated user.
+
+Example:
+
+```http
+PUT /notifications/read/3
+```
+
+Response:
+
+```json
+{
+  "message": "Notification marked as read"
+}
+```
+
+If the notification is already read:
+
+```json
+{
+  "message": "Notification already read"
+}
+```
+
+---
+
+# ✅ Mark All Notifications as Read
+
+```http
+PUT /notifications/read-all
+```
+
+Authentication is required.
+
+The API updates all unread notifications belonging to the current user.
+
+Example response:
+
+```json
+{
+  "message": "All notifications marked as read"
+}
+```
+
+---
+
+# 🖥️ Notification Center UI
+
+The Notification Center provides a floating notification bell.
+
+Conceptually:
+
+```text
+                         🔔
+                          |
+                          ↓
+                   Notifications
+                          |
+             +------------+------------+
+             |                         |
+          Unread                    Read
+             |                         |
+          Highlighted              Normal
+```
+
+The notification bell displays an unread count.
+
+Example:
+
+```text
+🔔 3
+```
+
+When the user clicks the bell, the notification dropdown opens.
+
+When the user clicks the bell again, the dropdown closes.
+
+---
+
+# 📱 Notification Dropdown
+
+The dropdown displays:
+
+```text
+Notifications
+
+Mark all as read
+
+--------------------------------
+
+Arun liked your post
+23/09/2026, 10:30 AM
+
+--------------------------------
+
+Ram commented on your post
+23/09/2026, 09:20 AM
+```
+
+Unread notifications are visually highlighted.
+
+Read notifications use the normal notification appearance.
+
+---
+
+# 🔄 Notification Background Polling
+
+The frontend periodically checks for updated notifications.
+
+The current implementation uses a polling interval of approximately five seconds.
+
+Conceptually:
+
+```text
+Dashboard
+
+   ↓
+
+Every 5 seconds
+
+   ↓
+
+GET /notifications/
+
+   ↓
+
+Count unread notifications
+
+   ↓
+
+Update notification badge
+```
+
+The background polling does not automatically open the notification dropdown.
+
+The dropdown opens only when the user clicks the notification bell.
+
+---
+
+# 🛡️ Notification User Security
+
+Notification APIs use JWT authentication.
+
+The current authenticated user is obtained through:
+
+```python
+current_user=Depends(get_current_user)
+```
+
+The notification query filters using the authenticated user's ID.
+
+Conceptually:
+
+```text
+JWT
+
+ ↓
+
+get_current_user()
+
+ ↓
+
+current_user.id
+
+ ↓
+
+Notification.user_id == current_user.id
+```
+
+This prevents one user from reading another user's notifications.
+
+---
+
+# 🤖 AI Support Chat
+
+The application includes an **AI Support Chat** to provide user assistance for common questions about the Blog Management API platform.
+
+The AI Support feature provides:
+
+* Floating support button
+* Chat popup
+* Chat input
+* User message display
+* AI response display
+* Scrollable chat history
+* Send button
+* Enter-key message sending
+* Thinking state
+* Error handling
+* Responsive design
+* JWT-protected backend access
+* User question and response activity logging
+
+The current implementation uses a **mocked/predefined FAQ response system**, which is supported by the assignment when a real AI API is not available.
+
+The implementation can later be connected to OpenAI, HuggingFace, or a local LLM if required.
+
+---
+
+# 💬 AI Support Chat Flow
+
+```text
+User
+
+ ↓
+
+AI Support Chat
+
+ ↓
+
+Enter Question
+
+ ↓
+
+JavaScript fetch()
+
+ ↓
+
+POST /api/ai-support/
+
+ ↓
+
+JWT Authentication
+
+ ↓
+
+FastAPI AI Support Router
+
+ ↓
+
+FAQ Response Function
+
+ ↓
+
+Save Question + Response
+
+ ↓
+
+Return JSON Response
+
+ ↓
+
+Display AI Response
+```
+
+---
+
+# 🧠 AI Support FAQ System
+
+The current implementation uses predefined responses for common platform-related questions.
+
+The FAQ system checks the user's message and looks for supported keywords.
+
+Examples include:
+
+```text
+create post
+edit post
+delete post
+subscription
+plan
+billing
+invoice
+payment
+dashboard
+analytics
+profile
+account
+hello
+hi
+hey
+```
+
+For example:
+
+```text
+User:
+
+How do I create a post?
+
+        ↓
+
+FAQ matching
+
+        ↓
+
+Create post keyword detected
+
+        ↓
+
+Predefined support response
+```
+
+---
+
+# 📝 AI Support Suggested Questions
+
+The AI Support system can assist with questions related to:
+
+* Creating posts
+* Editing posts
+* Deleting posts
+* Subscription plans
+* Billing
+* Invoices
+* Profile management
+* Dashboard analytics
+* General platform FAQs
+
+Example:
+
+```text
+How do I create a post?
+```
+
+Response:
+
+```text
+To create a post, go to the Posts section,
+click Create Post, enter the title and content,
+then submit the post.
+```
+
+---
+
+# ❓ Unsupported AI Questions
+
+If the FAQ system does not recognize a question, it returns a fallback response.
+
+Example:
+
+```text
+I'm sorry, I don't have an answer for that yet.
+Please ask about creating, editing, or deleting posts,
+subscriptions, billing, profiles, or dashboard analytics.
+```
+
+This provides a controlled response rather than generating an unsupported answer.
+
+---
+
+# 🔌 AI Support API
+
+The AI Support endpoint is:
+
+```http
+POST /api/ai-support/
+```
+
+Authentication is required.
+
+The request body is:
+
+```json
+{
+  "message": "How do I create a post?"
+}
+```
+
+The API returns:
+
+```json
+{
+  "response": "To create a post, go to the Posts section, click Create Post, enter the title and content, then submit the post."
+}
+```
+
+---
+
+# 📦 AI Support Request Schema
+
+The backend accepts:
+
+```python
+class AIChatRequest(BaseModel):
+    message: str
+```
+
+The `message` field contains the user's question.
+
+---
+
+# 📦 AI Support Response Schema
+
+The backend returns:
+
+```python
+class AIChatResponse(BaseModel):
+    response: str
+```
+
+The `response` field contains the support answer.
+
+---
+
+# 🗄️ AI Chat Activity Tracking
+
+AI Support activity is stored in:
+
+```text
+ai_chat_logs
+```
+
+The table contains:
+
+```text
+id
+user_id
+question
+response
+created_at
+```
+
+The system stores:
+
+* User ID
+* User question
+* Support response
+* Date and time
+
+This provides activity tracking for AI Support conversations.
+
+---
+
+# 🔐 AI Support Authentication
+
+The AI Support endpoint uses JWT authentication.
+
+The endpoint depends on:
+
+```python
+current_user=Depends(get_current_user)
+```
+
+The authenticated user's ID is used when saving the chat log.
+
+Conceptually:
+
+```text
+JWT Token
+
+   ↓
+
+get_current_user()
+
+   ↓
+
+current_user.id
+
+   ↓
+
+AIChatLog.user_id
+```
+
+---
+
+# 🌐 AI Support Frontend and Backend Communication
+
+The Django dashboard runs on:
+
+```text
+http://127.0.0.1:8001
+```
+
+The FastAPI backend runs on:
+
+```text
+http://127.0.0.1:8000
+```
+
+The frontend sends the request using JavaScript `fetch()`.
+
+Example:
+
+```javascript
+const response = await fetch(
+    "http://127.0.0.1:8000/api/ai-support/",
+    {
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+
+        body: JSON.stringify({
+            message: message
+        })
+    }
+);
+```
+
+The request uses:
+
+```text
+Content-Type: application/json
+```
+
+because the request body is JSON.
+
+`JSON.stringify()` converts the JavaScript object into JSON text before it is sent through the HTTP request.
+
+---
+
+# ⏳ AI Support Thinking State
+
+While waiting for the FastAPI response, the UI displays:
+
+```text
+Thinking...
+```
+
+After the API response is received, the temporary message is removed and the actual response is displayed.
+
+This provides immediate visual feedback to the user.
+
+---
+
+# 🛡️ AI Support Error Handling
+
+The frontend handles API failures.
+
+Possible problems include:
+
+* Missing JWT token
+* FastAPI server unavailable
+* API request failure
+* Network failure
+* CORS configuration issue
+
+The user receives a friendly error message instead of the chat interface breaking.
+
+The actual error is also logged to the browser console for debugging.
+
+---
+
+# 📱 AI Support Responsive UI
+
+The AI Support chat is designed to work on desktop and mobile screens.
+
+Desktop:
+
+```text
+                         +----------------------+
+                         | AI Support            |
+                         |-----------------------|
+                         | Hello                 |
+                         |                       |
+                         | User question         |
+                         |                       |
+                         | AI response           |
+                         |-----------------------|
+                         | Type message   Send   |
+                         +----------------------+
+```
+
+Mobile layouts reduce the chat width so that the chat remains usable on smaller screens.
+
+---
+
+# 🧪 Testing AI Support
+
+## Step 1 — Login
+
+Login and obtain a JWT access token.
+
+---
+
+## Step 2 — Open Django Dashboard
+
+Run:
+
+```powershell
+cd django_admin
+
+python manage.py runserver 8001
+```
+
+Open:
+
+```text
+http://127.0.0.1:8001/dashboard/
+```
+
+---
+
+## Step 3 — Open AI Support
+
+Click:
+
+```text
+💬
+```
+
+The AI Support popup should open.
+
+---
+
+## Step 4 — Test Create Post Question
+
+Send:
+
+```text
+How do I create a post?
+```
+
+Verify that the predefined support response is displayed.
+
+---
+
+## Step 5 — Test Edit Post Question
+
+Send:
+
+```text
+How do I edit a post?
+```
+
+Verify the response.
+
+---
+
+## Step 6 — Test Delete Post Question
+
+Send:
+
+```text
+How do I delete a post?
+```
+
+Verify the response.
+
+---
+
+## Step 7 — Test Subscription Question
+
+Send:
+
+```text
+How does subscription work?
+```
+
+Verify the response.
+
+---
+
+## Step 8 — Test Billing Question
+
+Send:
+
+```text
+How can I check billing?
+```
+
+Verify the response.
+
+---
+
+## Step 9 — Test Dashboard Question
+
+Send:
+
+```text
+What does the dashboard show?
+```
+
+Verify the response.
+
+---
+
+## Step 10 — Test Profile Question
+
+Send:
+
+```text
+How can I manage my profile?
+```
+
+Verify the response.
+
+---
+
+## Step 11 — Test General Greeting
+
+Send:
+
+```text
+Hello
+```
+
+Verify the support greeting.
+
+---
+
+## Step 12 — Test Unknown Question
+
+Send a question outside the predefined FAQ list.
+
+Verify that the fallback response is returned.
+
+---
+
+## Step 13 — Verify AI Chat Logs
+
+Check the:
+
+```text
+ai_chat_logs
+```
+
+table.
+
+Verify:
+
+```text
+user_id
+
+question
+
+response
+
+created_at
+```
+
+---
+
+# 🔗 AI Support CORS Configuration
+
+Because the Django dashboard and FastAPI backend use different ports, they are different browser origins.
+
+Django:
+
+```text
+http://127.0.0.1:8001
+```
+
+FastAPI:
+
+```text
+http://127.0.0.1:8000
+```
+
+FastAPI CORS configuration allows the Django dashboard origin.
+
+Example:
+
+```python
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8001",
+        "http://localhost:8001"
+    ],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
+)
+```
+
+This allows the Django dashboard JavaScript to communicate with the FastAPI backend.
+
+---
+
 # 📊 User Dashboard & Analytics
 
 The application includes a personalized **User Dashboard** that displays statistics and analytics for the currently authenticated user.
@@ -972,7 +1993,7 @@ The dashboard displays three main statistics cards:
 
 ```text
 +-------------------+-------------------+-------------------+
-|   Total Posts     |  Comments Made    |  Likes Received  |
+|   Total Posts     |  Comments Made    |  Likes Received   |
 |        3          |         0         |         1         |
 +-------------------+-------------------+-------------------+
 ```
@@ -1139,11 +2160,17 @@ Likes per post use:
 
 ```text
 Post
- ↓
+
+  ↓
+
 Like
- ↓
+
+  ↓
+
 COUNT(Like.id)
- ↓
+
+  ↓
+
 GROUP BY Post
 ```
 
@@ -1151,11 +2178,17 @@ Comments per post use:
 
 ```text
 Post
- ↓
+
+  ↓
+
 Comment
- ↓
+
+  ↓
+
 COUNT(Comment.id)
- ↓
+
+  ↓
+
 GROUP BY Post
 ```
 
@@ -1171,9 +2204,13 @@ A bar chart displays:
 
 ```text
 Post
+
  │
+
  ├── Likes
+
  │
+
  └── Comments
 ```
 
@@ -1183,14 +2220,22 @@ Example:
 Likes / Comments
 
 Count
-  5 |
-  4 |       █
-  3 |       █
-  2 |       █
-  1 | █     █
-  0 | █  █  █
-    +----------------
-      Post1 Post2 Post3
+
+ 5 |
+
+ 4 |       █
+
+ 3 |       █
+
+ 2 |       █
+
+ 1 | █     █
+
+ 0 | █  █  █
+
+   +----------------
+
+     Post1 Post2 Post3
 ```
 
 The chart is dynamically generated using data received from:
@@ -1253,6 +2298,8 @@ Aggregated Dashboard Data
 Chart.js
 ```
 
+The same dashboard page also contains the floating Notification Center and AI Support Chat interfaces.
+
 ---
 
 # 🎨 Dashboard CSS
@@ -1273,6 +2320,8 @@ The CSS provides:
 * Chart border
 * Centered chart
 * Mobile responsiveness
+* Notification Center styling
+* AI Support Chat styling
 
 The chart is displayed inside a separate bordered box.
 
@@ -1430,7 +2479,9 @@ The dashboard should display:
 User Dashboard
 
 Total Posts
+
 Comments Made
+
 Likes Received
 
 Post Analytics
@@ -1450,6 +2501,7 @@ For example:
 User 1
 
 Post A
+
 Post B
 
 User 2
@@ -1487,6 +2539,8 @@ The project uses the following tables:
 4. `likes`
 5. `subscription_plans`
 6. `billing_history`
+7. `notifications`
+8. `ai_chat_logs`
 
 ---
 
@@ -1602,8 +2656,9 @@ posts.id
    |
 
 post_id
+```
 
-
+```text
 users.id
 
    ↑
@@ -1637,8 +2692,9 @@ posts.id
    |
 
 post_id
+```
 
-
+```text
 users.id
 
    ↑
@@ -1708,6 +2764,76 @@ start_date
 end_date
 
 created_at
+```
+
+---
+
+# 🔔 Notifications Table
+
+Stores in-app notification information.
+
+```text
+id
+
+user_id
+
+message
+
+notification_type
+
+is_read
+
+created_at
+```
+
+Relationship:
+
+```text
+users.id
+
+   ↑
+
+   |
+
+user_id
+
+   |
+
+notifications
+```
+
+---
+
+# 🤖 AI Chat Logs Table
+
+Stores AI Support questions and responses.
+
+```text
+id
+
+user_id
+
+question
+
+response
+
+created_at
+```
+
+Relationship:
+
+```text
+users.id
+
+   ↑
+
+   |
+
+user_id
+
+   |
+
+ai_chat_logs
 ```
 
 ---
@@ -2057,6 +3183,8 @@ Notification Service
 Email Service
 ```
 
+The in-app notification is also created for the post owner.
+
 ---
 
 # 👀 View Comments
@@ -2097,6 +3225,10 @@ Check Post Owner
      ↓
 
 If liker != post owner
+
+     ↓
+
+Create In-App Notification
 
      ↓
 
@@ -2176,6 +3308,64 @@ Both endpoints require JWT authentication.
 
 ---
 
+# 🔔 Notification APIs
+
+The notification system provides three protected endpoints.
+
+## Get Notifications
+
+```http
+GET /notifications/
+```
+
+Returns notifications for the current authenticated user.
+
+## Mark One Read
+
+```http
+PUT /notifications/read/{notification_id}
+```
+
+Marks one notification as read.
+
+## Mark All Read
+
+```http
+PUT /notifications/read-all
+```
+
+Marks all unread notifications for the current user as read.
+
+---
+
+# 🤖 AI Support API
+
+The AI Support system provides:
+
+```http
+POST /api/ai-support/
+```
+
+Authentication is required.
+
+Example request:
+
+```json
+{
+  "message": "How do I create a post?"
+}
+```
+
+Example response:
+
+```json
+{
+  "response": "To create a post, go to the Posts section, click Create Post, enter the title and content, then submit the post."
+}
+```
+
+---
+
 # ✅ Validation
 
 Pydantic is used for request validation.
@@ -2188,6 +3378,7 @@ Examples:
 * Post title must contain at least 3 characters
 * Post content must contain at least 10 characters
 * Comment text cannot be empty
+* AI Support message is accepted as the user's support question
 
 Invalid data is rejected by the API.
 
@@ -2303,6 +3494,10 @@ media/
 * Django Templates
 * JavaScript
 * Chart.js
+* Notification Center
+* AI Support Chat
+* JSON / REST API communication
+* Browser localStorage
 
 ---
 
@@ -2314,149 +3509,79 @@ Blog_Management_API/
 │
 
 ├── .env
-
 ├── .gitignore
-
 ├── blog.db
-
 ├── requirements.txt
-
 ├── README.md
-
 ├── seed_plans.py
-
 ├── assign_basic_plan.py
-
 │
-
 ├── media/
-
 │   ├── posts/
-
 │   │   └── uploaded images
-
 │   │
-
 │   └── invoices/
-
 │       └── generated invoices
-
 │
-
 ├── Screenshots/
-
 │
-
 ├── app/
-
 │   │
-
 │   ├── __init__.py
-
 │   ├── main.py
-
 │   ├── database.py
-
 │   ├── models.py
-
 │   ├── schemas.py
-
 │   ├── auth.py
-
 │   ├── dependencies.py
-
 │   │
-
 │   ├── services/
-
 │   │   ├── __init__.py
-
 │   │   ├── email_service.py
-
 │   │   └── notification_service.py
-
 │   │
-
 │   ├── utils/
-
 │   │   ├── __init__.py
-
 │   │   └── subscription.py
-
 │   │
-
 │   └── routers/
-
 │       ├── __init__.py
-
 │       ├── auth.py
-
 │       ├── post.py
-
 │       ├── comment.py
-
 │       ├── like.py
-
 │       ├── subscription.py
-
-│       └── dashboard.py
-
+│       ├── dashboard.py
+│       ├── notifications.py
+│       └── ai_support.py
 │
-
 └── django_admin/
-
     │
-
     ├── manage.py
-
     │
-
     ├── django_admin/
-
     │   ├── __init__.py
-
     │   ├── settings.py
-
     │   ├── urls.py
-
     │   ├── asgi.py
-
     │   └── wsgi.py
-
     │
-
     └── subscriptions/
-
         ├── __init__.py
-
         ├── admin.py
-
         ├── apps.py
-
         ├── models.py
-
         ├── migrations/
-
         ├── tests.py
-
         ├── views.py
-
         ├── urls.py
-
         │
-
         ├── static/
-
         │   └── subscriptions/
-
         │       └── dashboard.css
-
         │
-
         └── templates/
-
             └── subscriptions/
-
                 └── dashboard.html
 ```
 
@@ -2524,6 +3649,8 @@ Create like email
 Call email_service
 ```
 
+The in-app Notification Center uses the `Notification` database model to store notifications separately from email delivery.
+
 ---
 
 ## subscription.py
@@ -2570,6 +3697,64 @@ JSON response
 
 ---
 
+## notifications.py
+
+Responsible for the Notification Center API.
+
+It provides:
+
+```text
+Get notifications
+
+       ↓
+
+Current authenticated user
+
+       ↓
+
+User-specific notification filtering
+
+       ↓
+
+Mark notification read
+
+       ↓
+
+Mark all notifications read
+```
+
+---
+
+## ai_support.py
+
+Responsible for AI Support functionality.
+
+It provides:
+
+```text
+Receive user question
+
+       ↓
+
+Check FAQ response
+
+       ↓
+
+Generate predefined support response
+
+       ↓
+
+Save question + response
+
+       ↓
+
+Return response
+```
+
+The current implementation uses a predefined/mock FAQ system as allowed by the assignment.
+
+---
+
 ## dashboard.html
 
 Responsible for the Django dashboard interface.
@@ -2590,6 +3775,14 @@ Post Analytics
        ↓
 
 Chart.js visualization
+
+       ↓
+
+Notification Center
+
+       ↓
+
+AI Support Chat
 ```
 
 ---
@@ -2618,6 +3811,14 @@ Chart box
        ↓
 
 Responsive design
+
+       ↓
+
+Notification Center
+
+       ↓
+
+AI Support Chat
 ```
 
 ---
@@ -2766,6 +3967,10 @@ Swagger can be used to test:
 * Billing history
 * User dashboard
 * Dashboard chart data
+* Notifications
+* Mark notification as read
+* Mark all notifications as read
+* AI Support
 
 ---
 
@@ -2853,6 +4058,8 @@ The Django dashboard provides:
 * Comments per Post
 * Responsive dashboard layout
 * Chart.js visualization
+* Notification Center
+* AI Support Chat
 
 ---
 
@@ -2942,6 +4149,8 @@ Comment creation
 Comment subscription limit
 
 Comment email notification
+
+In-app notification
 ```
 
 Use a second user to comment on the post so the post owner receives the notification.
@@ -2978,6 +4187,7 @@ Test:
 * Duplicate like
 * Subscription like limit
 * Like email notification
+* In-app notification
 
 Use a second user to like the post so the post owner receives the notification.
 
@@ -3248,6 +4458,10 @@ Likes Received
 Post Analytics
 
 Chart
+
+Notification Bell
+
+AI Support
 ```
 
 ---
@@ -3263,6 +4477,132 @@ Login as User 2.
 Open the dashboard and verify User 2's data.
 
 Each user's dashboard should contain only their own statistics.
+
+---
+
+## Step 26 — Test Notification Center
+
+Login as the post owner.
+
+Have another user:
+
+```text
+Like the post
+```
+
+or:
+
+```text
+Comment on the post
+```
+
+Open the dashboard.
+
+Verify:
+
+```text
+🔔 unread count
+```
+
+Click the notification bell.
+
+Verify that the notification appears in the dropdown.
+
+Click the notification.
+
+Verify that it becomes read.
+
+Create another notification and click:
+
+```text
+Mark all as read
+```
+
+Verify that all notifications become read.
+
+---
+
+## Step 27 — Test AI Support
+
+Open:
+
+```text
+http://127.0.0.1:8001/dashboard/
+```
+
+Click:
+
+```text
+💬 AI Support
+```
+
+Test:
+
+```text
+How do I create a post?
+```
+
+Verify the predefined response.
+
+Test:
+
+```text
+How do I edit a post?
+```
+
+Test:
+
+```text
+How do I delete a post?
+```
+
+Test:
+
+```text
+How does subscription work?
+```
+
+Test:
+
+```text
+How can I check billing?
+```
+
+Test:
+
+```text
+What does the dashboard show?
+```
+
+Test:
+
+```text
+Hello
+```
+
+Also test an unsupported question and verify that the fallback response is displayed.
+
+---
+
+## Step 28 — Verify AI Chat Logs
+
+Check:
+
+```text
+ai_chat_logs
+```
+
+Verify:
+
+```text
+user_id
+
+question
+
+response
+
+created_at
+```
 
 ---
 
@@ -3290,6 +4630,10 @@ likes
 subscription_plans
 
 billing_history
+
+notifications
+
+ai_chat_logs
 ```
 
 ---
@@ -3342,6 +4686,22 @@ SELECT * FROM billing_history;
 
 ---
 
+## Verify Notifications
+
+```sql
+SELECT * FROM notifications;
+```
+
+---
+
+## Verify AI Chat Logs
+
+```sql
+SELECT * FROM ai_chat_logs;
+```
+
+---
+
 # 📸 Project Deliverables
 
 ## Swagger
@@ -3370,6 +4730,10 @@ Screenshots can include:
 * Billing History
 * User Dashboard
 * Dashboard Chart Data
+* Notifications
+* Mark notification as read
+* Mark all notifications as read
+* AI Support
 
 ---
 
@@ -3384,6 +4748,8 @@ Screenshots should include:
 * Post Analytics section
 * Likes/Comments Chart
 * Responsive dashboard layout
+* Notification Center
+* AI Support Chat
 
 ---
 
@@ -3425,6 +4791,40 @@ It is also useful to capture the Swagger request/response showing that the comme
 
 ---
 
+# 🔔 Notification Center Screenshots
+
+Screenshots can include:
+
+* Notification bell
+* Unread notification count
+* Notification dropdown
+* Unread notification
+* Read notification
+* Mark one notification as read
+* Mark all notifications as read
+* Comment notification
+* Like notification
+* Subscription notification
+
+---
+
+# 🤖 AI Support Screenshots
+
+Screenshots can include:
+
+* AI Support floating button
+* AI Support popup
+* User question
+* AI response
+* Multiple messages
+* Thinking state
+* Unsupported-question fallback response
+* Responsive mobile chat UI
+* Swagger AI Support endpoint
+* AI chat log database records
+
+---
+
 # 🗄️ Database Screenshots
 
 Screenshots can include:
@@ -3435,6 +4835,8 @@ Screenshots can include:
 * SQLite `likes` table
 * SQLite `subscription_plans` table
 * SQLite `billing_history` table
+* SQLite `notifications` table
+* SQLite `ai_chat_logs` table
 
 ---
 
@@ -3481,6 +4883,8 @@ Screenshots can include:
 * Chart.js bar chart
 * Likes per post
 * Comments per post
+* Notification Center
+* AI Support Chat
 
 ---
 
@@ -3581,6 +4985,64 @@ Do not include SMTP usernames/passwords or other private credentials in screensh
 
 ---
 
+## 🔔 Notification Center
+
+* [x] Notification model
+* [x] Notifications database table
+* [x] User notification relationship
+* [x] Like notifications
+* [x] Comment notifications
+* [x] Subscription notifications
+* [x] JWT-protected notification API
+* [x] Current-user notification filtering
+* [x] Notification dropdown
+* [x] Notification bell
+* [x] Unread notification count
+* [x] Read/unread notification styling
+* [x] Mark individual notification as read
+* [x] Mark all notifications as read
+* [x] Background notification polling
+* [x] Responsive notification UI
+
+---
+
+## 🤖 AI Support Chat
+
+* [x] AI Support floating button
+* [x] AI Support popup
+* [x] Chat input
+* [x] User message display
+* [x] AI response display
+* [x] Scrollable chat history
+* [x] Send button
+* [x] Enter-key message sending
+* [x] Thinking state
+* [x] Error handling
+* [x] Responsive AI chat UI
+* [x] JWT-protected AI Support API
+* [x] FAQ-based support responses
+* [x] Create post assistance
+* [x] Edit post assistance
+* [x] Delete post assistance
+* [x] Subscription assistance
+* [x] Billing assistance
+* [x] Profile assistance
+* [x] Dashboard analytics assistance
+* [x] General FAQ assistance
+* [x] Unsupported-question fallback response
+* [x] AI chat activity logging
+* [x] User-specific AI chat logs
+* [x] Question storage
+* [x] Response storage
+* [x] Timestamp storage
+* [x] Django-to-FastAPI communication
+* [x] JSON request handling
+* [x] CORS configuration
+
+The current AI Support implementation uses predefined/mock FAQ responses, which is an accepted implementation option when a real AI API is not available.
+
+---
+
 ## Subscription & Billing
 
 * [x] Basic subscription plan
@@ -3646,132 +5108,109 @@ Do not include SMTP usernames/passwords or other private credentials in screensh
 # 🔄 Overall Application Flow
 
 ```text
-                    USER
-
-                      |
-
-          +-----------+-----------+
-
-          |                       |
-
-       Register                  Login
-
-          |                       |
-
-          +-----------+-----------+
-
-                      |
-
-                 JWT Token
-
-                      |
-
-          +-----------+-----------+
-
-          |           |           |
-
-        Posts      Comments      Likes
-
-          |           |           |
-
-      Image Upload    |           |
-
-          |           |           |
-
-     Search/Paging    |           |
-
-          |           |           |
-
-          +-----------+-----------+
-
-                      |
-
-              Subscription Check
-
-                      |
-
-          +-----------+-----------+
-
-          |           |           |
-
-        Basic      Premium       Pro
-
-          |           |           |
-
-        Limits       Limits    Unlimited
-
-                      |
-
-              Comment / Like
-
-                      |
-
-              BackgroundTasks
-
-                      |
-
-          notification_service.py
-
-                      |
-
-              email_service.py
-
-                      |
-
-                    SMTP
-
-                      |
-
-               Mailtrap / Gmail
+                         USER
+                           |
+             +-------------+-------------+
+             |                           |
+          Register                      Login
+             |                           |
+             +-------------+-------------+
+                           |
+                       JWT Token
+                           |
+       +-------------------+-------------------+
+       |                   |                   |
+     Posts              Comments             Likes
+       |                   |                   |
+  Image Upload             |                   |
+       |                   |                   |
+ Search/Paging             |                   |
+       |                   |                   |
+       +-------------------+-------------------+
+                           |
+                  Subscription Check
+                           |
+             +-------------+-------------+
+             |             |             |
+           Basic        Premium         Pro
+             |             |             |
+           Limits        Limits       Unlimited
+                           |
+                 Comment / Like
+                           |
+              +------------+------------+
+              |                         |
+       In-App Notification        BackgroundTasks
+              |                         |
+       Notification Center       notification_service.py
+              |                         |
+              |                  email_service.py
+              |                         |
+              |                        SMTP
+              |                         |
+              |                   Mailtrap / Gmail
+              |
+              |
+              +-------------------+
+                                  |
+                           User Dashboard
+                                  |
+                             JWT Token
+                                  |
+                           Dashboard API
+                                  |
+                         Current User Filter
+                                  |
+                         Database Aggregation
+                                  |
+                    +-------------+-------------+
+                    |                           |
+              Dashboard Stats             Chart Data
+                    |                           |
+                    +-------------+-------------+
+                                  |
+                               Django
+                              Dashboard
+                                  |
+                              Chart.js
+                                  |
+                           Post Analytics
 
 
-                      +
-
-                      |
-
-              User Dashboard
-
-                      |
-
-                 JWT Token
-
-                      |
-
-             Dashboard API
-
-                      |
-
-            Current User Filter
-
-                      |
-
-            Database Aggregation
-
-                      |
-
-          +-----------+-----------+
-
-          |                       |
-
-     Dashboard Stats        Chart Data
-
-          |                       |
-
-          +-----------+-----------+
-
-                      |
-
-                  Django
-
-                 Dashboard
-
-                      |
-
-                 Chart.js
-
-                      |
-
-              Post Analytics
+                         AI Support
+                              |
+                              ↓
+                    Floating Chat Button
+                              |
+                              ↓
+                         Chat Popup
+                              |
+                              ↓
+                         User Question
+                              |
+                              ↓
+                       JavaScript fetch()
+                              |
+                              ↓
+                    POST /api/ai-support/
+                              |
+                              ↓
+                       JWT Authentication
+                              |
+                              ↓
+                     FastAPI AI Router
+                              |
+                              ↓
+                     FAQ Response Engine
+                              |
+                              ↓
+                       Save Chat Log
+                              |
+                              ↓
+                       JSON Response
+                              |
+                              ↓
+                     AI Chat Response
 ```
 
 ---
@@ -3802,6 +5241,14 @@ This project demonstrates:
 * SMTP email communication
 * Background task processing
 * Modular service architecture
+* Notification Center
+* Read/unread notification management
+* User-specific notifications
+* AI Support Chat
+* FAQ-based support system
+* Frontend/backend API communication
+* JSON request/response handling
+* CORS
 * Error handling
 * API testing with Swagger
 * Data aggregation
@@ -3813,6 +5260,8 @@ This project demonstrates:
 * Chart.js data visualization
 * Dynamic API-driven charts
 * Responsive UI design
+* Browser localStorage
+* JWT-based frontend API authentication
 
 ---
 
@@ -3849,6 +5298,9 @@ It includes:
 * Mailtrap email testing
 * Background email processing
 * Modular email and notification services
+* In-app Notification Center
+* Notification read/unread management
+* User-specific notifications
 * Swagger API documentation
 * Subscription-based access control
 * Basic, Premium, and Pro plans
@@ -3866,5 +5318,11 @@ It includes:
 * Chart.js visualization
 * Dynamic API-driven charts
 * Responsive Django dashboard UI
+* AI Support Chat
+* FAQ-based AI support
+* User assistance for posts, subscriptions, billing, profiles, and analytics
+* AI Support activity logging
+* Responsive AI Support UI
+* Django-to-FastAPI AI Support communication
 
-The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, administrative management, asynchronous email notification processing, personalized analytics, data aggregation, and interactive dashboard visualization.
+The project demonstrates the implementation of a practical REST API with authentication, database operations, file handling, searching, pagination, subscription access control, billing, invoice generation, administrative management, asynchronous email notification processing, in-app notifications, personalized analytics, data aggregation, interactive dashboard visualization, and an AI Support Chat system.

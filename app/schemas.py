@@ -133,3 +133,15 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+# ============================================================
+# AI SUPPORT CHAT SCHEMAS
+# ============================================================
+
+class AIChatRequest(BaseModel):
+    # Frontend/user anuppura question inga receive aagum.
+    message: str
+
+
+class AIChatResponse(BaseModel):
+    # Backend AI answer-ah indha format-la return pannum.
+    response: str
