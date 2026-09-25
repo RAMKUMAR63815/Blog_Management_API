@@ -19,7 +19,7 @@ urlpatterns = [
             name="dashboard"    #This gives this URL a name/label.Instead of remembering the actual URL:
         ),
            path(
-        "auth-success",
+        "auth-success/",
         auth_success,
         name="auth_success"
     ),

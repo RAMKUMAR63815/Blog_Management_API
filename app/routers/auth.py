@@ -575,7 +575,7 @@ async def auth0_callback(
 
                 f"{FRONTEND_URL}"
 
-                f"/login/auth-success/"
+                f"/login/auth-success"
 
                 f"?token={access_token}"
 
