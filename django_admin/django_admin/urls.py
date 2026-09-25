@@ -16,13 +16,42 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include,path
+from subscriptions.views import signup_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
  # Dashboard URLs 
  #  # /dashboard/ request-a subscriptions.urls-ku anuppum
+        # Login
+    
+    # =========================================================
+    # LOGIN
+    # =========================================================
+
+    path(
+        "login/",
+        include("subscriptions.auth_urls")
+    ),
+
+
+    # =========================================================
+    # SIGNUP
+    # =========================================================
+
+    path(
+        "signup/",
+        signup_view,
+        name="signup"
+    ),
+
+
+    # =========================================================
+    # DASHBOARD
+    # =========================================================
+
     path(
         "dashboard/",
         include("subscriptions.urls")
     ),
+
 ]

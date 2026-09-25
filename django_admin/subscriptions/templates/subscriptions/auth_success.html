@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Login Success</title>
+
+</head>
+
+
+<body>
+
+
+    <h2>
+        Login successful
+    </h2>
+
+
+    <p>
+        Redirecting...
+    </p>
+
+
+    <script>
+
+
+        /* =================================================
+           GET TOKEN FROM URL
+        ================================================== */
+
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+
+        const token =
+            params.get("token");
+
+
+        /* =================================================
+           TOKEN NOT FOUND
+        ================================================== */
+
+        if (!token) {
+
+            window.location.href =
+                "/login/";
+
+        }
+
+
+        /* =================================================
+           TOKEN FOUND
+        ================================================== */
+
+        else {
+
+
+            /* ---------------------------------------------
+               SAVE JWT
+            --------------------------------------------- */
+
+            localStorage.setItem(
+                "access_token",
+                token
+            );
+
+
+            /* ---------------------------------------------
+               REMOVE TOKEN FROM URL
+            --------------------------------------------- */
+
+            window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+            );
+
+
+            /* ---------------------------------------------
+               GO TO DASHBOARD
+            --------------------------------------------- */
+
+            window.location.href =
+                "/dashboard/";
+
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>

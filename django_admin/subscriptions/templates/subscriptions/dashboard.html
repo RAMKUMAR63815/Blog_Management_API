@@ -71,10 +71,11 @@
             <h3>Likes Received</h3>
             <p id="total-likes">0</p>
         </div>
+
         <div class="card">
-    <h3>Total Views</h3>
-    <p id="total-views">0</p>
-</div>
+            <h3>Total Views</h3>
+            <p id="total-views">0</p>
+        </div>
 
     </div>
 
@@ -87,6 +88,7 @@
         <!-- #canvas is an empty HTML drawing area.Chart.js uses this canvas to draw your chart. -->
 
     </div>
+
     <!-- =========================================================
      AI SUPPORT CHAT
      ========================================================= -->
@@ -177,6 +179,7 @@
 
 
     <script>
+
     //  using javascript dashboard becomes dynamic. Without JavaScript, your cards would remain:
     
         // Dashboard API URL storing our FastAPI dashboard endpoint in a variable.
@@ -202,11 +205,45 @@
             localStorage.getItem("access_token");
             //When the user logs in, your application stores the JWT access token in browser localStorage.
             //JWT is needed because "Which user is requesting this dashboard current_user=Depends(get_current_user)
+        
+        // =========================================================
+        // AUTHENTICATION HELPER
+        // =========================================================
+        
+        // If FastAPI returns 401, the JWT is invalid or expired.
+        // In that situation remove the old token and send user to login page.
+        function handleUnauthorized(response) {
+
+            if (response.status === 401) {
+
+                localStorage.removeItem(
+                    "access_token"
+                );
+
+                alert(
+                    "Your login session has expired. Please login again."
+                );
+
+                window.location.replace(
+                    "/login/"
+                );
+
+                return true;
+            }
+
+            return false;
+        }
+
+
         // Token check pannrom
         if (!token) {
 
             alert(
                 "Please login first."
+            );
+
+            window.location.replace(
+                "/login/"
             );
 
         } else {
@@ -222,6 +259,15 @@
             })
 
             .then(response => { //fter FastAPI responds, JavaScript receives the HTTP response.response contains things like:status headers body
+
+                // Check whether JWT is expired or invalid.
+                if (handleUnauthorized(response)) {
+
+                    throw new Error(
+                        "Authentication required"
+                    );
+
+                }
 
                 if (!response.ok) {//check request was successful.
 
@@ -259,9 +305,9 @@
                     data.total_likes_received;
                 
                 document.getElementById(
-                        "total-views"
-                    ).textContent =
-                        data.total_views;
+                    "total-views"
+                ).textContent =
+                    data.total_views;
 
             })
 
@@ -287,6 +333,15 @@
 
             .then(response => {
 
+                // Check whether JWT is expired or invalid.
+                if (handleUnauthorized(response)) {
+
+                    throw new Error(
+                        "Authentication required"
+                    );
+
+                }
+
                 if (!response.ok) {
 
                     throw new Error(
@@ -302,8 +357,11 @@
             .then(data => {
 
                 // Titles
-                const titles =data.likes.map(item => item.title);
+                const titles = data.likes.map(
+                    item => item.title
+                );
                     //map()- array objects-la irundhu specific field extract panna.
+
                 // Likes
                 const likes =
                     data.likes.map(
@@ -376,820 +434,940 @@
             });
 
         }
+
+
         // ==========================================
-// NOTIFICATION VARIABLES
-// ==========================================
+        // NOTIFICATION VARIABLES
+        // ==========================================
 
-const NOTIFICATION_API_URL =
-    "http://127.0.0.1:8000/notifications/";
+        const NOTIFICATION_API_URL =
+            "http://127.0.0.1:8000/notifications/";
 
-const bell =
-    document.getElementById("bell");
+        const bell =
+            document.getElementById("bell");
 
-const notificationDropdown =
-    document.getElementById(
-        "notification-dropdown"
-    );
-
-const notificationList =
-    document.getElementById(
-        "notification-list"
-    );
-
-const unreadCount =
-    document.getElementById(
-        "unread-count"
-    );
-
-const markAllReadButton =
-    document.getElementById(
-        "mark-all-read"
-    );
-
-
-// ==========================================
-// BELL CLICK
-// ==========================================
-
-bell.addEventListener(
-    "click",
-    function(event) {
-
-        // Stop click from going to document from continuing to the parent/document.
-        event.stopPropagation();
-        //Bell click event handle panniyachu. Andha same click document-ku mela propagate aaga koodadhu. Adhan event.stopPropagation().
-        // Open / close dropdown
-        notificationDropdown.classList.toggle(//This represents the CSS classes currently attached to that element.
-        //toggle() na oru value/class irundha remove pannum; illana add pannum.    
-        "show"//No show → hiddeshow → visible
-        );
-
-        // Only load notifications
-        // when user opens the dropdown
-        if (
-            notificationDropdown.classList.contains(
-                "show"
-            )
-        ) {
-            loadNotifications();//Dropdown open aagumbodhu mattum backend-la irundhu notifications fetch pannrom.
-        }
-    }
-);
-
-
-// ==========================================
-// CLICK OUTSIDE
-// CLOSE DROPDOWN
-// ==========================================
-
-document.addEventListener(//Click anywhere on the document.
-    "click",
-    function(event) {
-
-        if (
-            !event.target.closest( //Did the user click outside the notification center?.closest() checks whether the clicked element or one of its parents belongs to:.notification-center
-                ".notification-center"
-            )//Notification area-ku veliya click pannina dropdown close pannrom
-        ) {
-
-            notificationDropdown.classList.remove(
-                "show"//becomes hidden according to your CSS
-            );
-        }
-    }
-);
-
-
-// ==========================================
-// LOAD NOTIFICATIONS
-// ==========================================
-
-function loadNotifications() {
-    // using Because the URL is repeated multiple times
-    fetch(
-        NOTIFICATION_API_URL,//fetch() defaults to GET when no method is specified.
-        {
-            headers: {
-                "Authorization":
-                    "Bearer " + token
-            }
-        }
-    )
-    .then(response => {
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Notification API Failed"
+        const notificationDropdown =
+            document.getElementById(
+                "notification-dropdown"
             );
 
-        }
-
-        return response.json();
-    })
-    .then(data => {
-
-        // Calculate unread notifications
-        const unread =
-            data.filter(
-                notification =>
-                    !notification.is_read
-            ).length;
-
-
-        // Update badge
-        unreadCount.textContent =
-            unread;
-
-
-        // If there are no notifications
-        if (data.length === 0) {
-
-            notificationList.innerHTML =//Because we want to insert HTML into the page.
-            //HTML content inside an HTML element.    
-            `//
-                <div class="empty-notification">
-                    No notifications
-                </div>
-                `;//Backtick ` use pannina multiple-line HTML-a JavaScript string-a write panna mudiyum. ${} use panni API data-va HTML-kulla insert pannalam.
-
-            return;
-        }
-
-        //0 illana
-        // Create notification HTML
-        let html = "";
-
-
-        data.forEach(//loops through every notification.
-            notification => {
-
-                html += `
-                    <div
-                        class="notification-item ${//he ternary operator true false
-                            notification.is_read ? "read": "unread"//class="notification-item read"CSS can then make read notifications visually differen
- }"
-                        onclick="markNotificationRead(
-                            ${notification.id}
-                        )"
-                    >
-
-                        <p>
-                            ${notification.message}
-                        </p>
-
-                        <span
-                            class="notification-time"
-                        >
-                            ${new Date(
-                                notification.created_at
-                            ).toLocaleString()}//formats it according to the user's locale.
-                        </span>
-
-                    </div>
-                `;
-            }
-        );
-
-
-        notificationList.innerHTML =
-            html;
-
-    })
-    .catch(error => {
-
-        console.error(
-            "Notification Error:",
-            error
-        );
-
-    });
-}
-
-
-// ==========================================
-// MARK ONE AS READ
-// ==========================================
-
-function markNotificationRead(
-    notificationId
-) {
-
-    fetch(
-        `http://127.0.0.1:8000/notifications/read/${notificationId}`,
-        {
-            method: "PUT",//Because we're updating existing data.
-
-            headers: {
-                "Authorization":
-                    "Bearer " + token
-            }
-        }
-    )
-    .then(response => {
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Failed to mark notification as read"
+        const notificationList =
+            document.getElementById(
+                "notification-list"
             );
 
-        }
+        const unreadCount =
+            document.getElementById(
+                "unread-count"
+            );
 
-        return response.json();
-
-    })
-    .then(() => {
-
-        // Reload notification list
-        loadNotifications();
-
-    })
-    .catch(error => {
-
-        console.error(
-            "Mark Read Error:",
-            error
-        );
-
-    });
-}
+        const markAllReadButton =
+            document.getElementById(
+                "mark-all-read"
+            );
 
 
-// ==========================================
-// MARK ALL AS READ
-// ==========================================
+        // ==========================================
+        // BELL CLICK
+        // ==========================================
 
-markAllReadButton.addEventListener(
-    "click",
-    function(event) {
+        bell.addEventListener(
+            "click",
+            function(event) {
 
-        event.stopPropagation();
+                // Stop click from going to document from continuing to the parent/document.
+                event.stopPropagation();
+                //Bell click event handle panniyachu. Andha same click document-ku mela propagate aaga koodadhu. Adhan event.stopPropagation().
 
-        fetch(
-            "http://127.0.0.1:8000/notifications/read-all",
-            {
-                method: "PUT",
-
-                headers: {
-                    "Authorization":
-                        "Bearer " + token
-                }
-            }
-        )
-        .then(response => {
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Failed to mark all as read"
+                // Open / close dropdown
+                notificationDropdown.classList.toggle(
+                //This represents the CSS classes currently attached to that element.
+                //toggle() na oru value/class irundha remove pannum; illana add pannum.    
+                    "show"
+                //No show → hiddeshow → visible
                 );
 
-            }
+                // Only load notifications
+                // when user opens the dropdown
+                if (
+                    notificationDropdown.classList.contains(
+                        "show"
+                    )
+                ) {
 
-            return response.json();
+                    loadNotifications();
+                    //Dropdown open aagumbodhu mattum backend-la irundhu notifications fetch pannrom.
 
-        })
-        .then(() => {
-
-            loadNotifications();
-
-        })
-        .catch(error => {
-
-            console.error(
-                "Mark All Read Error:",
-                error
-            );
-
-        });
-    }
-);
-
-
-// ==========================================
-// BACKGROUND CHECK
-// ==========================================
-//
-// This checks for NEW notifications,
-// but DOES NOT open the dropdown.
-//
-// So notifications will NOT appear
-// automatically on the screen.
-//
-
-setInterval(//Run this function repeatedly after a fixed time interval.
-    function() {//But you are already sitting on the dashboard.You don't want to manually refresh the page.So every 5 seconds the frontend checks:
-
-        fetch(
-            NOTIFICATION_API_URL,
-            {
-                headers: {
-                    "Authorization":
-                        "Bearer " + token
                 }
+
             }
-        )
-        .then(response => response.json())
-        .then(data => {
-
-            const unread =
-                data.filter(
-                    notification =>
-                        !notification.is_read
-                ).length;
-
-            unreadCount.textContent =
-                unread;
+        );
 
 
-            // Only update visible list
-            // if dropdown is already open
-            if (
-                notificationDropdown.classList.contains(
-                    "show"
-                )
-            ) {
-                loadNotifications();
+        // ==========================================
+        // CLICK OUTSIDE
+        // CLOSE DROPDOWN
+        // ==========================================
+
+        document.addEventListener(
+            //Click anywhere on the document.
+            "click",
+            function(event) {
+
+                if (
+                    !event.target.closest(
+                    //Did the user click outside the notification center?.closest() checks whether the clicked element or one of its parents belongs to:.notification-center
+                        ".notification-center"
+                    )
+                    //Notification area-ku veliya click pannina dropdown close pannrom
+                ) {
+
+                    notificationDropdown.classList.remove(
+                        "show"
+                        //becomes hidden according to your CSS
+                    );
+
+                }
+
             }
-
-        })
-        .catch(error => {
-
-            console.error(
-                "Background Notification Error:",
-                error
-            );
-
-        });
-
-    },
-    5000
-    // Every 5 seconds → check notification APIUnread count updates on bell
-);
-
-
-
-/* =========================================================
-   AI SUPPORT CHAT
-   ========================================================= */
-
-
-/* =========================================================
-   API URL
-   ========================================================= */
-
-// FastAPI AI Support endpoint URL.
-const AI_SUPPORT_API_URL =
-    "http://127.0.0.1:8000/api/ai-support/";
-
-
-/* =========================================================
-   GET HTML ELEMENTS
-   ========================================================= */
-
-// Chat open button-ah edukkrom.
-const aiChatButton =
-    document.getElementById(
-        "ai-chat-button"
-    );
-
-// Chat window-ah edukkrom.
-const aiChatWindow =
-    document.getElementById(
-        "ai-chat-window"
-    );
-
-// Chat close button-ah edukkrom.
-const aiChatClose =
-    document.getElementById(
-        "ai-chat-close"
-    );
-
-// Messages display aagura area-ah edukkrom.
-const aiChatMessages =
-    document.getElementById(
-        "ai-chat-messages"
-    );
-
-// User message type pannura input-ah edukkrom.
-const aiChatInput =
-    document.getElementById(
-        "ai-chat-input"
-    );
-
-// Send button-ah edukkrom.
-const aiChatSend =
-    document.getElementById(
-        "ai-chat-send"
-    );
-
-
-/* =========================================================
-   OPEN CHAT
-   ========================================================= */
-
-aiChatButton.addEventListener(
-    "click",
-    function () {
-
-        // Chat window open panna show class add pannrom.
-        aiChatWindow.classList.add(
-            "show"
-        );
-
-        // Chat open aanadhum input box focus aagum.
-        aiChatInput.focus();
-
-    }
-);
-
-
-/* =========================================================
-   CLOSE CHAT
-   ========================================================= */
-
-aiChatClose.addEventListener(
-    "click",
-    function () {
-
-        // Chat window close panna show class remove pannrom.
-        aiChatWindow.classList.remove(
-            "show"
-        );
-
-    }
-);
-
-
-/* =========================================================
-   SEND BUTTON
-   ========================================================= */
-
-aiChatSend.addEventListener(
-    "click",
-    function () {
-
-        // User message send panna function call pannrom.
-        sendAIMessage();
-
-    }
-);
-
-
-/* =========================================================
-   ENTER KEY
-   ========================================================= */
-
-aiChatInput.addEventListener(
-    "keydown",
-    function (event) {
-
-        // Enter press pannumbodhu message send aagum.
-        if (event.key === "Enter") {
-
-            sendAIMessage();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   SEND AI MESSAGE
-   ========================================================= */
-
-async function sendAIMessage() {
-
-    // Input box-la irukkura message-ah edukkrom.
-    const message =
-        aiChatInput.value.trim();
-
-
-    // Empty message-na API call panna vendam.
-    if (!message) {
-
-        return;
-
-    }
-
-
-    // User message-ah chat-la display pannrom.
-    addUserMessage(
-        message
-    );
-
-
-    // Message send pannadhum input clear pannrom.
-    aiChatInput.value = "";
-
-
-    // Latest message visible-a irukka bottom-ku scroll pannrom.
-    scrollChatToBottom();
-
-
-    // User multiple times click panna avoid pannrom.
-    aiChatSend.disabled = true;
-
-
-    // AI response varum varaikkum temporary message kaattrom.
-    const thinkingMessage =
-        addAIMessage(
-            "Thinking..."
         );
 
 
-    try {
+        // ==========================================
+        // LOAD NOTIFICATIONS
+        // ==========================================
 
-        /* =================================================
-           GET LOGIN TOKEN
-           ================================================= */
+        function loadNotifications() {
 
-        // Browser localStorage-la save pannirukkura JWT token-ah edukkrom.
-        const token =
-            localStorage.getItem(
-                "access_token"
-            );
-
-
-        // Token illaina backend authentication fail aagum.
-        if (!token) {
-
-            throw new Error(
-                "Access token not found. Please login again."
-            );
-
-        }
-
-
-        /* =================================================
-           CALL FASTAPI
-           ================================================= */
-
-        const response =
-            await fetch(
-                AI_SUPPORT_API_URL,
-                // wait until it takes some time because the browser has to communicate with FastAPI.
+            // using Because the URL is repeated multiple times
+            fetch(
+                NOTIFICATION_API_URL,
+                //fetch() defaults to GET when no method is specified.
                 {
-                    method: "POST",
-
                     headers: {
-
-                        // Backend-ku JSON data anupprom.The request body contains JSON data.
-                        "Content-Type":
-                            "application/json",
-
-                        // JWT token backend authentication-ku anupprom.
                         "Authorization":
                             "Bearer " + token
+                    }
+                }
+            )
 
-                    },
+            .then(response => {
 
-                    // FastAPI AIChatRequest schema-ku match aagum.
-                    body: JSON.stringify({//Convert this JavaScript object into JSON string format and send it as the request body.
+                // Check whether JWT is expired or invalid.
+                if (handleUnauthorized(response)) {
 
-                        message: message
-
-                    })
+                    throw new Error(
+                        "Authentication required"
+                    );
 
                 }
-            );
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Notification API Failed"
+                    );
+
+                }
+
+                return response.json();
+
+            })
+
+            .then(data => {
+
+                // Calculate unread notifications
+                const unread =
+                    data.filter(
+                        notification =>
+                            !notification.is_read
+                    ).length;
 
 
-        /* =================================================
-           CHECK RESPONSE
-           ================================================= */
+                // Update badge
+                unreadCount.textContent =
+                    unread;
 
-        if (!response.ok) {
 
-            throw new Error(
-                "AI Support API failed. Status: "
-                + response.status
-            );
+                // If there are no notifications
+                if (data.length === 0) {
+
+                    notificationList.innerHTML =
+                    //Because we want to insert HTML into the page.
+                    //HTML content inside an HTML element.    
+                    `
+                        <div class="empty-notification">
+                            No notifications
+                        </div>
+                    `;
+                    //Backtick ` use pannina multiple-line HTML-a JavaScript string-a write panna mudiyum. ${} use panni API data-va HTML-kulla insert pannalam.
+
+                    return;
+                }
+
+                //0 illana
+                // Create notification HTML
+                let html = "";
+
+
+                data.forEach(
+                //loops through every notification.
+                    notification => {
+
+                        html += `
+                            <div
+                                class="notification-item ${
+                                    //he ternary operator true false
+                                    notification.is_read
+                                        ? "read"
+                                        : "unread"
+                                    //class="notification-item read"CSS can then make read notifications visually differen
+                                }"
+                                onclick="markNotificationRead(
+                                    ${notification.id}
+                                )"
+                            >
+
+                                <p>
+                                    ${notification.message}
+                                </p>
+
+                                <span
+                                    class="notification-time"
+                                >
+                                    ${new Date(
+                                        notification.created_at
+                                    ).toLocaleString()}
+                                    //formats it according to the user's locale.
+                                </span>
+
+                            </div>
+                        `;
+                    }
+                );
+
+
+                notificationList.innerHTML =
+                    html;
+
+            })
+
+            .catch(error => {
+
+                console.error(
+                    "Notification Error:",
+                    error
+                );
+
+            });
 
         }
 
 
-        /* =================================================
-           CONVERT RESPONSE TO JSON
-           ================================================= */
+        // ==========================================
+        // MARK ONE AS READ
+        // ==========================================
 
-        const data =
-            await response.json();
+        function markNotificationRead(
+            notificationId
+        ) {
+
+            fetch(
+                `http://127.0.0.1:8000/notifications/read/${notificationId}`,
+                {
+                    method: "PUT",
+                    //Because we're updating existing data.
+
+                    headers: {
+                        "Authorization":
+                            "Bearer " + token
+                    }
+
+                }
+            )
+
+            .then(response => {
+
+                // Check whether JWT is expired or invalid.
+                if (handleUnauthorized(response)) {
+
+                    throw new Error(
+                        "Authentication required"
+                    );
+
+                }
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Failed to mark notification as read"
+                    );
+
+                }
+
+                return response.json();
+
+            })
+
+            .then(() => {
+
+                // Reload notification list
+                loadNotifications();
+
+            })
+
+            .catch(error => {
+
+                console.error(
+                    "Mark Read Error:",
+                    error
+                );
+
+            });
+
+        }
 
 
+        // ==========================================
+        // MARK ALL AS READ
+        // ==========================================
 
-        /* =================================================
-           REMOVE THINKING MESSAGE
-           ================================================= */
+        markAllReadButton.addEventListener(
+            "click",
+            function(event) {
 
-        thinkingMessage.remove();
+                event.stopPropagation();
 
+                fetch(
+                    "http://127.0.0.1:8000/notifications/read-all",
+                    {
+                        method: "PUT",
 
-        /* =================================================
-           SHOW AI RESPONSE
-           ================================================= */
+                        headers: {
+                            "Authorization":
+                                "Bearer " + token
+                        }
 
-        addAIMessage(
-            data.response
+                    }
+                )
+
+                .then(response => {
+
+                    // Check whether JWT is expired or invalid.
+                    if (handleUnauthorized(response)) {
+
+                        throw new Error(
+                            "Authentication required"
+                        );
+
+                    }
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            "Failed to mark all as read"
+                        );
+
+                    }
+
+                    return response.json();
+
+                })
+
+                .then(() => {
+
+                    loadNotifications();
+
+                })
+
+                .catch(error => {
+
+                    console.error(
+                        "Mark All Read Error:",
+                        error
+                    );
+
+                });
+
+            }
         );
 
 
-        // Latest AI response visible-a irukka bottom-ku scroll pannrom.
-        scrollChatToBottom();
+        // ==========================================
+        // BACKGROUND CHECK
+        // ==========================================
+        //
+        // This checks for NEW notifications,
+        // but DOES NOT open the dropdown.
+        //
+        // So notifications will NOT appear
+        // automatically on the screen.
+        //
 
-    }
+        setInterval(
+        //Run this function repeatedly after a fixed time interval.
+            function() {
+            //But you are already sitting on the dashboard.You don't want to manually refresh the page.So every 5 seconds the frontend checks:
+
+                fetch(
+                    NOTIFICATION_API_URL,
+                    {
+                        headers: {
+                            "Authorization":
+                                "Bearer " + token
+                        }
+                    }
+                )
+
+                .then(response => {
+
+                    // Check whether JWT is expired or invalid.
+                    if (handleUnauthorized(response)) {
+
+                        throw new Error(
+                            "Authentication required"
+                        );
+
+                    }
+
+                    return response.json();
+
+                })
+
+                .then(data => {
+
+                    const unread =
+                        data.filter(
+                            notification =>
+                                !notification.is_read
+                        ).length;
+
+                    unreadCount.textContent =
+                        unread;
 
 
-    catch (error) {
+                    // Only update visible list
+                    // if dropdown is already open
+                    if (
+                        notificationDropdown.classList.contains(
+                            "show"
+                        )
+                    ) {
 
-        // Thinking message remove pannrom.
-        thinkingMessage.remove();
+                        loadNotifications();
 
+                    }
 
-        // Error message user-ku display pannrom.
-        addAIMessage(
-            "Sorry, I couldn't connect to the AI Support service. Please try again."
+                })
+
+                .catch(error => {
+
+                    console.error(
+                        "Background Notification Error:",
+                        error
+                    );
+
+                });
+
+            },
+            5000
+            // Every 5 seconds → check notification APIUnread count updates on bell
         );
 
 
-        // Browser console-la actual error paakalaam.
-        console.error(
-            "AI Support Error:",
-            error
-        );
 
-    }
+        /* =========================================================
+           AI SUPPORT CHAT
+           ========================================================= */
 
 
-    finally {
+        /* =========================================================
+           API URL
+           ========================================================= */
 
-        // API request complete aana Send button enable pannrom.
-        aiChatSend.disabled = false;
+        // FastAPI AI Support endpoint URL.
+        const AI_SUPPORT_API_URL =
+            "http://127.0.0.1:8000/api/ai-support/"; 
+ 
+ 
+        /* ========================================================= 
+           GET HTML ELEMENTS 
+           ========================================================= */ 
+         
+        // Chat open button-ah edukkrom. 
+        const aiChatButton = 
+            document.getElementById( 
+                "ai-chat-button" 
+            ); 
+         
+        // Chat window-ah edukkrom. 
+        const aiChatWindow = 
+            document.getElementById( 
+                "ai-chat-window" 
+            ); 
+         
+        // Chat close button-ah edukkrom. 
+        const aiChatClose = 
+            document.getElementById( 
+                "ai-chat-close" 
+            ); 
+         
+        // Messages display aagura area-ah edukkrom. 
+        const aiChatMessages = 
+            document.getElementById( 
+                "ai-chat-messages" 
+            ); 
+         
+        // User message type pannura input-ah edukkrom. 
+        const aiChatInput = 
+            document.getElementById( 
+                "ai-chat-input" 
+            ); 
+         
+        // Send button-ah edukkrom. 
+        const aiChatSend = 
+            document.getElementById( 
+                "ai-chat-send" 
+            ); 
+         
+         
+        /* ========================================================= 
+           OPEN CHAT 
+           ========================================================= */ 
+         
+        aiChatButton.addEventListener( 
+            "click", 
+            function () { 
+         
+                // Chat window open panna show class add pannrom. 
+                aiChatWindow.classList.add( 
+                    "show" 
+                ); 
+         
+                // Chat open aanadhum input box focus aagum. 
+                aiChatInput.focus(); 
+         
+            } 
+        ); 
+         
+         
+        /* ========================================================= 
+           CLOSE CHAT 
+           ========================================================= */ 
+         
+        aiChatClose.addEventListener( 
+            "click", 
+            function () { 
+         
+                // Chat window close panna show class remove pannrom. 
+                aiChatWindow.classList.remove( 
+                    "show" 
+                ); 
+         
+            } 
+        ); 
+         
+         
+        /* ========================================================= 
+           SEND BUTTON 
+           ========================================================= */ 
+         
+        aiChatSend.addEventListener( 
+            "click", 
+            function () { 
+         
+                // User message send panna function call pannrom. 
+                sendAIMessage(); 
+         
+            } 
+        ); 
+         
+         
+        /* ========================================================= 
+           ENTER KEY 
+           ========================================================= */ 
+         
+        aiChatInput.addEventListener( 
+            "keydown", 
+            function (event) { 
+         
+                // Enter press pannumbodhu message send aagum. 
+                if (event.key === "Enter") { 
+         
+                    sendAIMessage(); 
+         
+                } 
+         
+            } 
+        ); 
+         
+         
+        /* ========================================================= 
+           SEND AI MESSAGE 
+           ========================================================= */ 
+         
+        async function sendAIMessage() { 
+         
+            // Input box-la irukkura message-ah edukkrom. 
+            const message = 
+                aiChatInput.value.trim(); 
+         
+         
+            // Empty message-na API call panna vendam. 
+            if (!message) { 
+         
+                return; 
+         
+            } 
+         
+         
+            // User message-ah chat-la display pannrom. 
+            addUserMessage( 
+                message 
+            ); 
+         
+         
+            // Message send pannadhum input clear pannrom. 
+            aiChatInput.value = ""; 
+         
+         
+            // Latest message visible-a irukka bottom-ku scroll pannrom. 
+            scrollChatToBottom(); 
+         
+         
+            // User multiple times click panna avoid pannrom. 
+            aiChatSend.disabled = true; 
+         
+         
+            // AI response varum varaikkum temporary message kaattrom. 
+            const thinkingMessage = 
+                addAIMessage( 
+                    "Thinking..." 
+                ); 
+         
+         
+            try { 
+         
+                /* ================================================= 
+                   GET LOGIN TOKEN 
+                   ================================================= */ 
+         
+                // Browser localStorage-la save pannirukkura JWT token-ah edukkrom. 
+                const token = 
+                    localStorage.getItem( 
+                        "access_token" 
+                    ); 
+         
+         
+                // Token illaina backend authentication fail aagum. 
+                if (!token) {
 
-        // User next message type panna input focus pannrom.
-        aiChatInput.focus();
-
-    }
-
-}
-
-
-/* =========================================================
-   ADD USER MESSAGE
-   ========================================================= */
-
-function addUserMessage(
-    message
-) {
-
-    // New div element create pannrom.
-    const messageElement =
-        document.createElement(
-            "div"
-        );
-
-
-    // User message-ku user-message class add pannrom.
-    messageElement.className =
-        "user-message";
-
-
-    // Message bubble create pannrom.
-    const bubble =
-        document.createElement(
-            "div"
-        );
-
-
-    // Bubble-ku message-bubble class add pannrom.
-    bubble.className =
-        "message-bubble";
-
-
-    // User text-ah safely display pannrom.
-    bubble.textContent =
-        message;
-
-
-    // Bubble-ah message element-kulla add pannrom.
-    messageElement.appendChild(
-        bubble
+    alert(
+        "Please login first."
     );
 
-
-    // User message-ah chat area-kulla add pannrom.
-    aiChatMessages.appendChild(
-        messageElement
+    window.location.replace(
+        "/login/"
     );
 
-}
+    /*
+     IMPORTANT:
+     Stop the remaining dashboard JavaScript.
+     Otherwise notification background requests
+     continue running with a null token.
+    */
 
-
-/* =========================================================
-   ADD AI MESSAGE
-   ========================================================= */
-
-function addAIMessage(
-    message
-) {
-
-    // New div create pannrom.
-    const messageElement =
-        document.createElement(
-            "div"
-        );
-
-
-    // AI message-ku ai-message class add pannrom.
-    messageElement.className =
-        "ai-message";
-
-
-    // AI message bubble create pannrom.
-    const bubble =
-        document.createElement(
-            "div"
-        );
-
-
-    // Bubble-ku message-bubble class add pannrom.
-    bubble.className =
-        "message-bubble";
-
-
-    // AI response-ah safely display pannrom.
-    bubble.textContent =
-        message;
-
-
-    // Bubble-ah AI message element-kulla add pannrom.
-    messageElement.appendChild(
-        bubble
+    throw new Error(
+        "No access token. Redirecting to login."
     );
 
+} else {
+         
+                /* ================================================= 
+                   CALL FASTAPI 
+                   ================================================= */ 
+         
+                const response = 
+                    await fetch( 
+                        AI_SUPPORT_API_URL, 
+                        // wait until it takes some time because the browser has to communicate with FastAPI. 
+                        { 
+                            method: "POST", 
+         
+                            headers: { 
+         
+                                // Backend-ku JSON data anupprom.The request body contains JSON data. 
+                                "Content-Type": 
+                                    "application/json", 
+         
+                                // JWT token backend authentication-ku anupprom. 
+                                "Authorization": 
+                                    "Bearer " + token 
+         
+                            }, 
+         
+                            // FastAPI AIChatRequest schema-ku match aagum. 
+                            body: JSON.stringify({
+                            //Convert this JavaScript object into JSON string format and send it as the request body. 
+         
+                                message: message 
+         
+                            }) 
+         
+                        } 
+                    ); 
+         
+         
+                /* ================================================= 
+                   CHECK RESPONSE 
+                   ================================================= */ 
+         
+                // Handle expired/invalid JWT.
+                if (response.status === 401) {
 
-    // AI message-ah chat area-kulla add pannrom.
-    aiChatMessages.appendChild(
-        messageElement
-    );
+                    localStorage.removeItem(
+                        "access_token"
+                    );
 
+                    alert(
+                        "Your login session has expired. Please login again."
+                    );
 
-    // Latest message visible-a irukka scroll pannrom.
-    scrollChatToBottom();
+                    window.location.replace(
+                        "/login/"
+                    );
 
+                    return;
 
-    // Created element-ah return pannrom.
-    // Thinking message remove panna idhu use aagum.
-    return messageElement;
+                }
 
-}
+                if (!response.ok) { 
+         
+                    throw new Error( 
+                        "AI Support API failed. Status: " 
+                        + response.status 
+                    ); 
+         
+                } 
+         
+         
+                /* ================================================= 
+                   CONVERT RESPONSE TO JSON 
+                   ================================================= */ 
+         
+                const data = 
+                    await response.json(); 
+         
+         
+         
+                /* ================================================= 
+                   REMOVE THINKING MESSAGE 
+                   ================================================= */ 
+         
+                thinkingMessage.remove(); 
+         
+         
+                /* ================================================= 
+                   SHOW AI RESPONSE 
+                   ================================================= */ 
+         
+                addAIMessage( 
+                    data.response 
+                ); 
+         
+         
+                // Latest AI response visible-a irukka bottom-ku scroll pannrom. 
+                scrollChatToBottom(); 
+         
+            } 
+         
+         
+            catch (error) { 
+         
+                // Thinking message remove pannrom. 
+                thinkingMessage.remove(); 
+         
+                // Error message user-ku display pannrom. 
+                addAIMessage( 
+                    "Sorry, I couldn't connect to the AI Support service. Please try again." 
+                ); 
+         
+                // Browser console-la actual error paakalaam. 
+                console.error( 
+                    "AI Support Error:", 
+                    error 
+                ); 
+         
+            } 
+         
+         
+            finally { 
+         
+                // API request complete aana Send button enable pannrom. 
+                aiChatSend.disabled = false; 
+         
+                // User next message type panna input focus pannrom. 
+                aiChatInput.focus(); 
+         
+            } 
+         
+        } 
+         
+         
+        /* ========================================================= 
+           ADD USER MESSAGE 
+           ========================================================= */ 
+         
+        function addUserMessage( 
+            message 
+        ) { 
+         
+            // New div element create pannrom. 
+            const messageElement = 
+                document.createElement( 
+                    "div" 
+                ); 
+         
+         
+            // User message-ku user-message class add pannrom. 
+            messageElement.className = 
+                "user-message"; 
+         
+         
+            // Message bubble create pannrom. 
+            const bubble = 
+                document.createElement( 
+                    "div" 
+                ); 
+         
+         
+            // Bubble-ku message-bubble class add pannrom. 
+            bubble.className = 
+                "message-bubble"; 
+         
+         
+            // User text-ah safely display pannrom. 
+            bubble.textContent = 
+                message; 
+         
+         
+            // Bubble-ah message element-kulla add pannrom. 
+            messageElement.appendChild( 
+                bubble 
+            ); 
+         
+         
+            // User message-ah chat area-kulla add pannrom. 
+            aiChatMessages.appendChild( 
+                messageElement 
+            ); 
+         
+        } 
+         
+         
+        /* ========================================================= 
+           ADD AI MESSAGE 
+           ========================================================= */ 
+         
+        function addAIMessage( 
+            message 
+        ) { 
+         
+            // New div create pannrom. 
+            const messageElement = 
+                document.createElement( 
+                    "div" 
+                ); 
+         
+         
+            // AI message-ku ai-message class add pannrom. 
+            messageElement.className = 
+                "ai-message"; 
+         
+         
+            // AI message bubble create pannrom. 
+            const bubble = 
+                document.createElement( 
+                    "div" 
+                ); 
+         
+         
+            // Bubble-ku message-bubble class add pannrom. 
+            bubble.className = 
+                "message-bubble"; 
+         
+         
+            // AI response-ah safely display pannrom. 
+            bubble.textContent = 
+                message; 
+         
+         
+            // Bubble-ah AI message element-kulla add pannrom. 
+            messageElement.appendChild( 
+                bubble 
+            ); 
+         
+         
+            // AI message-ah chat area-kulla add pannrom. 
+            aiChatMessages.appendChild( 
+                messageElement 
+            ); 
+         
+         
+            // Latest message visible-a irukka scroll pannrom. 
+            scrollChatToBottom(); 
+         
+         
+            // Created element-ah return pannrom. 
+            // Thinking message remove panna idhu use aagum. 
+            return messageElement; 
+         
+        } 
+         
+         
+        /* ========================================================= 
+           SCROLL CHAT TO BOTTOM 
+           ========================================================= */ 
+         
+        function scrollChatToBottom() { 
+         
+            // Chat content-oda total height-ah scroll position-ah set pannrom. 
+            aiChatMessages.scrollTop = 
+                aiChatMessages.scrollHeight; 
+         
+        } 
+         
+        // Top -How far the element has been scrolled vertically. 
+        // scrollHeight- The total height of all content inside the element, including content currently outside the visible area. 
 
-
-/* =========================================================
-   SCROLL CHAT TO BOTTOM
-   ========================================================= */
-
-function scrollChatToBottom() {
-
-    // Chat content-oda total height-ah scroll position-ah set pannrom.
-    aiChatMessages.scrollTop =
-        aiChatMessages.scrollHeight;
-
-}
-
-// Top -How far the element has been scrolled vertically.
-// scrollHeight- The total height of all content inside the element, including content currently outside the visible area.
-
-    </script>
-
-</body>
-
-</html>
-
-<!-- dashboard.html
-      ↓
-fetch("/dashboard/")
-      ↓
-JWT
-      ↓
-FastAPI
-      ↓
-get_current_user()
-      ↓
-identify logged-in user
-      ↓
-SQLite
-      ↓
-calculate:
-    total_posts
-    total_comments
-    total_likes_received
-    total_views
-      ↓
-JSON
-      ↓
-JavaScript
-      ↓
+    </script> 
+ 
+</body> 
+ 
+</html> 
+ 
+<!-- dashboard.html 
+      ↓ 
+fetch("/dashboard/") 
+      ↓ 
+JWT 
+      ↓ 
+FastAPI 
+      ↓ 
+get_current_user() 
+      ↓ 
+identify logged-in user 
+      ↓ 
+SQLite 
+      ↓ 
+calculate: 
+    total_posts 
+    total_comments 
+    total_likes_received 
+    total_views 
+      ↓ 
+JSON 
+      ↓ 
+JavaScript 
+      ↓ 
 4 cards -->

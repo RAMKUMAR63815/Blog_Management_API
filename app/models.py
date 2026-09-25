@@ -40,8 +40,28 @@ class User(Base):
 
     password = Column(
         String(255),
-        nullable=False
+        nullable=True
     )
+    # Authentication provider
+# local   -> normal email/password login
+# google  -> Google login through Auth0
+# facebook -> Facebook login through Auth0
+    provider = Column(
+    String(50),
+    default="local",
+    nullable=False
+)
+
+# Auth0 unique user identifier
+# Example:
+# google-oauth2|123456789
+# facebook|123456789
+    auth0_id = Column(
+    String(255),
+    unique=True,
+    nullable=True,
+    index=True
+)
 
     # User -> Posts
     posts = relationship(

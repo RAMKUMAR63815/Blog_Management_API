@@ -16,6 +16,10 @@ from app.routers import dashboard
 from .routers.subscription import router as subscription_router
 from app.routers import notifications
 from app.routers import ai_support
+from starlette.middleware.sessions import SessionMiddleware
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # =========================================================
 # CREATE DATABASE TABLES
@@ -38,7 +42,16 @@ app = FastAPI(
     ),
     version="1.0.0"
 )
-
+#=======================================================
+#SessionMiddleware
+#========================================================
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv(
+        "SESSION_SECRET_KEY",
+        "change-this-session-secret"
+    )
+)
 
 # =========================================================
 # CORS

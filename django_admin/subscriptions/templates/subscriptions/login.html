@@ -1,0 +1,438 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Login</title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'subscriptions/login.css' %}"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- =================================================
+         LOGIN CONTAINER
+    ================================================== -->
+
+    <div class="login-container">
+
+
+        <h2>
+            Welcome Back
+        </h2>
+
+
+        <p>
+            Login to your account
+        </p>
+
+
+        <!-- =================================================
+             NORMAL EMAIL/PASSWORD LOGIN
+        ================================================== -->
+
+        <form id="loginForm">
+
+
+            <div class="form-group">
+
+                <label for="email">
+                    Email
+                </label>
+
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="login-btn"
+            >
+                Login
+            </button>
+
+
+            <p
+                id="loginError"
+                class="error-message"
+            ></p>
+
+
+        </form>
+
+
+        <!-- =================================================
+             DIVIDER
+        ================================================== -->
+
+        <div class="divider">
+
+            <span>
+                OR
+            </span>
+
+        </div>
+
+
+        <!-- =================================================
+             GOOGLE LOGIN
+        ================================================== -->
+
+        <button
+            type="button"
+            class="social-btn google-btn"
+            onclick="loginWithGoogle()"
+        >
+
+            <span class="social-icon">
+                G
+            </span>
+
+            <span>
+                Continue with Google
+            </span>
+
+        </button>
+
+
+        <!-- =================================================
+             FACEBOOK LOGIN
+        ================================================== -->
+
+        <button
+            type="button"
+            class="social-btn facebook-btn"
+            onclick="loginWithFacebook()"
+        >
+
+            <span class="social-icon">
+                f
+            </span>
+
+            <span>
+                Continue with Facebook
+            </span>
+
+        </button>
+
+
+        <!-- =================================================
+             SIGNUP
+        ================================================== -->
+
+        <p class="signup-text">
+
+            Don't have an account?
+
+            <a href="/signup/">
+                Create Account
+            </a>
+
+        </p>
+
+
+    </div>
+
+
+    <!-- =================================================
+         JAVASCRIPT
+    ================================================== -->
+
+    <script>
+
+
+        /* =================================================
+           FASTAPI URL
+        ================================================== */
+
+        const API_URL =
+            "http://127.0.0.1:8000";
+
+
+        /* =================================================
+           NORMAL EMAIL/PASSWORD LOGIN
+        ================================================== */
+
+        document
+            .getElementById("loginForm")
+            .addEventListener(
+                "submit",
+                async function(event) {
+
+                    event.preventDefault();
+
+
+                    const email =
+                        document
+                            .getElementById("email")
+                            .value
+                            .trim();
+
+
+                    const password =
+                        document
+                            .getElementById("password")
+                            .value;
+
+
+                    const errorElement =
+                        document
+                            .getElementById("loginError");
+
+
+                    errorElement.textContent = "";
+
+
+                    try {
+
+
+                        /* -------------------------------------
+                           CALL FASTAPI LOGIN
+                        ------------------------------------- */
+
+                        const response =
+                            await fetch(
+
+                                `${API_URL}/auth/login`,
+
+                                {
+
+                                    method: "POST",
+
+                                    headers: {
+
+                                        /*
+                                         IMPORTANT:
+                                         LoginRequest is a Pydantic
+                                         model, so FastAPI expects JSON.
+                                        */
+
+                                        "Content-Type":
+                                            "application/json"
+
+                                    },
+
+                                    body:
+                                        JSON.stringify({
+
+                                            /*
+                                             IMPORTANT:
+                                             Backend expects "email",
+                                             not "username".
+                                            */
+
+                                            email: email,
+
+                                            password: password
+
+                                        })
+
+                                }
+
+                            );
+
+
+                        /* -------------------------------------
+                           READ RESPONSE
+                        ------------------------------------- */
+
+                        const data =
+                            await response.json();
+
+
+                        console.log(
+                            "Login response:",
+                            data
+                        );
+
+
+                        /* -------------------------------------
+                           LOGIN ERROR
+                        ------------------------------------- */
+
+                        if (!response.ok) {
+
+                            if (
+                                data &&
+                                typeof data.detail === "string"
+                            ) {
+
+                                errorElement.textContent =
+                                    data.detail;
+
+                            }
+
+                            else if (
+                                data &&
+                                data.detail
+                            ) {
+
+                                errorElement.textContent =
+                                    JSON.stringify(
+                                        data.detail
+                                    );
+
+                            }
+
+                            else {
+
+                                errorElement.textContent =
+                                    "Invalid email or password.";
+
+                            }
+
+                            return;
+
+                        }
+
+
+                        /* -------------------------------------
+                           CHECK ACCESS TOKEN
+                        ------------------------------------- */
+
+                        if (
+                            !data ||
+                            !data.access_token
+                        ) {
+
+                            errorElement.textContent =
+                                "Login failed: access token not received.";
+
+                            return;
+
+                        }
+
+
+                        /* -------------------------------------
+                           SAVE TOKEN
+                        ------------------------------------- */
+
+                        localStorage.setItem(
+
+                            "access_token",
+
+                            data.access_token
+
+                        );
+
+
+                        /* -------------------------------------
+                           VERIFY TOKEN
+                        ------------------------------------- */
+
+                        const savedToken =
+                            localStorage.getItem(
+                                "access_token"
+                            );
+
+
+                        if (!savedToken) {
+
+                            errorElement.textContent =
+                                "Unable to save login session.";
+
+                            return;
+
+                        }
+
+
+                        /* -------------------------------------
+                           DASHBOARD
+                        ------------------------------------- */
+
+                        window.location.replace(
+                            "/dashboard/"
+                        );
+
+                    }
+
+
+                    catch (error) {
+
+                        console.error(
+                            "Login Error:",
+                            error
+                        );
+
+
+                        errorElement.textContent =
+                            "Unable to connect to server.";
+
+                    }
+
+                }
+            );
+
+
+        /* =================================================
+           GOOGLE LOGIN
+        ================================================== */
+
+        function loginWithGoogle() {
+
+            window.location.href =
+                `${API_URL}/auth/login/google`;
+
+        }
+
+
+        /* =================================================
+           FACEBOOK LOGIN
+        ================================================== */
+
+        function loginWithFacebook() {
+
+            window.location.href =
+                `${API_URL}/auth/login/facebook`;
+
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>

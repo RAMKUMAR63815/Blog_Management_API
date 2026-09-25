@@ -1,0 +1,35 @@
+Normal Signup
+    ↓
+FastAPI
+    ↓
+SQLite User
+    ↓
+Your JWT
+
+Google Button
+    ↓
+Auth0
+    ↓
+Google
+    ↓
+Auth0 Callback
+    ↓
+FastAPI
+    ↓
+Create/Find User
+    ↓
+Your JWT
+
+Facebook Button
+    ↓
+Auth0
+    ↓
+Facebook
+    ↓
+Auth0 Callback
+    ↓
+FastAPI
+    ↓
+Create/Find User
+    ↓
+Your JWT
